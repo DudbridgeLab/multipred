@@ -1,0 +1,12 @@
+Package: multipred
+Type: Package
+Title: Calculates observed and expected measures of predictive accuracy over multiple traits
+Version: 0.1
+Date: 2017-07-10
+Author: Frank Dudbridge
+Maintainer: Frank Dudbridge <frank.dudbridge@leicester.ac.uk>
+Description: Fill this in later
+License: GPL-3
+LazyData: TRUE
+RoxygenNote: 6.0.1
+Suggests: tmvtnorm
