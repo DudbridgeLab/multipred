@@ -2,9 +2,10 @@
 
 export(analyticFamilyWise)
 export(analyticJoint)
+export(analyticOutcomeWise)
 export(analyticScreening)
-export(eventWise)
 export(familyWise)
 export(joint)
 export(multiPredAcc)
+export(outcomeWise)
 export(screening)
