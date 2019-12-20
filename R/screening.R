@@ -1,15 +1,31 @@
 #' Screening measures of predictive accuracy
 #'
-#' Calculates screening sensitivity, specificity, positive and negative predictive value, concordance and net benefit for a vector of predictors.
+#' Calculates screening sensitivity, specificity, positive and negative predictive value, concordance and relative utility for a vector of predictors.
 #'
-#' Screening measures consider the prediction of at least one event among several, without regard to whether the correct events are predicted.
+#' Screening measures consider the prediction of at least one event, without regard to whether the correct events are predicted.
+#' For example, screening sensitivity is the probability that, for an individual with at least one event, the predicted risk
+#' exceeds the threshold for at least one trait (but not necessary the ones that did occur).
+#' Screening specificity is the probability that, for an individual with no events, the predicted risk is lower than the
+#' threshold for all traits.
+#'
+#' Screening concordance is the probability that given one individual with at least one event, and another without any,
+#' the maximum predicted risk over all traits is higher in the former individual.  It is calculated by randomly drawing such
+#' pairs of individuals from \code{y}.  If \code{nsample} is zero, all such pairs are drawn from \code{y};
+#' this might be time-consuming.  Therefore the default is not to calculate concordance.
+#' However, a good estimate can be obtained from a limited number of random samples \code{nsample}.
+#'
+#' \code{prev} and \code{condprev} are only required to calculate relative utility, and can be omitted otherwise.
 
-#' @param targetProb Probability of at least one event.
-#' If NULL, which is the default, then targetProb is estimated from the data, ignoring ascertainment.
-#' @inheritParams eventWise
+#' @template sharedParams
+#' @template nsample
+#' @param prev Probability of at least one event, required for calculating relative utility.
+#' If NULL, which is the default, then \code{prev} is estimated from the \code{y} matrix, ignoring ascertainment.
+#' @param condprev Probability of at least one events, conditional on the risk predictions being equal to \code{thresh}.
+#' If NULL, which is the default, then \code{prev} is set to 1- the product of the elements of (1-\code{thresh}).
+#' This working definition is exact when predictions and outcomes both are jointly independent.
 #'
 #' @export
-screening=function(x,y,thresh=NULL,targetProb=NULL,nsample=0) {
+screening=function(x,y,thresh=NULL,prev=NULL,condprev=NULL,nsample=NULL) {
 
   # coerce x and y to matrices
   x = as.matrix(x)
@@ -21,10 +37,12 @@ screening=function(x,y,thresh=NULL,targetProb=NULL,nsample=0) {
     return(NULL)
   }
 
-  check=checkVectorMatrixDimensions(thresh,y)
-  if (!is.null(check)) {
-    print(paste("thresh",check))
-    return(NULL)
+  if (!is.null(thresh)) {
+    check=checkVectorMatrixDimensions(thresh,y)
+    if (!is.null(check)) {
+      print(paste("thresh",check))
+      return(NULL)
+    }
   }
 
   check=checkBinary(y)
@@ -33,65 +51,79 @@ screening=function(x,y,thresh=NULL,targetProb=NULL,nsample=0) {
     return(NULL)
   }
 
-  # predicted binary traits
-  predictedTrait=x
-  for(i in 1:dim(x)[1]) predictedTrait[i,]=x[i,]>=thresh
+  sens = NULL
+  spec = NULL
+  PPV = NULL
+  NPV = NULL
+  C = NULL
+  RU = NULL
 
-  # sensitivity
-  sens = mean(apply(as.matrix(predictedTrait[apply(y,1,max)==1,]),1,max)==1)
+  nsubject = nrow(y)
+  ntrait = ncol(y)
+  predictedTrait = matrix(0, nrow=nsubject, ncol=ntrait)
 
-  # specificity
-  spec = mean(apply(as.matrix(predictedTrait[apply(y,1,max)==0,]),1,max)==0)
+  if (!is.null(thresh)) {
 
-  # positive predictive value
-  PPV = mean(apply(as.matrix(y[apply(predictedTrait,1,max)==1,]),1,max)==1)
+    # predicted binary traits
+    for(i in 1:nsubject) for(j in 1:ntrait) predictedTrait[i,j]=x[i,j]>=thresh[j]
 
-  # negative predictive value
-  NPV = mean(apply(as.matrix(y[apply(predictedTrait,1,max)==0,]),1,max)==0)
+    # sensitivity
+    sens = mean(apply(as.matrix(predictedTrait[apply(y,1,max)==1,]),1,max)==1)
+
+    # specificity
+    spec = mean(apply(as.matrix(predictedTrait[apply(y,1,max)==0,]),1,max)==0)
+
+    # positive predictive value
+    PPV = mean(apply(as.matrix(y[apply(predictedTrait,1,max)==1,]),1,max)==1)
+
+    # negative predictive value
+    NPV = mean(apply(as.matrix(y[apply(predictedTrait,1,max)==0,]),1,max)==0)
+
+    # relative utility
+    # probability of at least one event
+    if (is.null(prev)) prev = mean(apply(y,1,max))
+    # probability of at least one event, given predictions equal to the threshold
+    if (is.null(condprev)) condprev = (1-prod(1-thresh))
+
+    RU = sens - (1-spec) * condprev/(1-condprev) * (1-prev)/prev
+
+  }
 
   # concordance
-  Cnumer=0
-  Cdenom=0
-  # complete enumeration
-  if (nsample==0) {
-    # individuals with at least one event
-    for(i in which(apply(y,1,max)==1)) {
-      xvector=NULL
-      yvector=NULL
-      # individuals with no events
-      for(j in which(apply(y,1,max)==0)) {
-        Cnumer = Cnumer + (sum(x[i,]>x[j,])>0)
-        Cdenom =Cdenom + 1
+  if (!is.null(nsample)) {
+    Cnumer = 0
+    Cdenom = 0
+    # complete enumeration
+    if (nsample==0) {
+      # individuals with at least one event
+      for(i in which(apply(y,1,max)==1)) {
+        # individuals with no events
+        for(j in which(apply(y,1,max)==0)) {
+          Cnumer = Cnumer + (max(x[i,]) > max(x[j,]))
+          Cdenom = Cdenom + 1
+        }
       }
     }
-    C=as.numeric(Cnumer/Cdenom)
-  }
-  # random sampling
-  else {
-    isample=sample(which(apply(y,1,max)==1),nsample,replace=TRUE)
-    jsample=sample(which(apply(y,1,max)==0),nsample,replace=TRUE)
-    Cnumer=0
-    Cdenom=0
-    for(i in 1:nsample) { # only consider pairs where one score vector is systematically <= than the other
-      if (sum(x[isample[i],]>x[jsample[i],])==0 |
-          sum(x[isample[i],]<x[jsample[i],])==0) {
-        Cnumer = Cnumer + (sum(x[isample[i],]>x[jsample[i],])>0)
-        Cdenom = Cdenom +1
+    # random sampling
+    if (nsample>0) {
+      sensSample=NULL
+      specSample=NULL
+      predictedTrait1=predictedTrait
+      isample=sample(which(apply(y,1,max)==1),nsample,replace=TRUE)
+      jsample=sample(which(apply(y,1,max)==0),nsample,replace=TRUE)
+      for(i in 1:nsample) {
+        Cnumer = Cnumer + (max(x[isample[i],]) > max(x[jsample[i],]))
       }
+      Cdenom = nsample
     }
     C = as.numeric(Cnumer/Cdenom)
-    print(Cdenom)
   }
-
-  # net benefit
-  if (is.null(targetProb)) targetProb=mean(apply(y,1,max))
-  NB = sens - (1-spec) * min(thresh/(1-thresh)) * (1-targetProb)/targetProb
 
   list(sens=sens,
        spec=spec,
        PPV=PPV,
        NPV=NPV,
        C=C,
-       NB=NB
+       RU=RU
   )
 }

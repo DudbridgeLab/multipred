@@ -1,22 +1,39 @@
 #' Family-wise measures of predictive accuracy
 #'
-#' Calculates family-wise sensitivity, specificity, positive and negative predictive value, concordance and net benefit for a vector of predictors.
+#' Calculates family-wise sensitivity, specificity, positive and negative predictive value, concordance and relative utility for a vector of predictors.
 #'
-#' Family-wise measures consider the prediction of at least one event within a fixed target vector.
-#' If \code{target} is NULL, which is the default, then the marginal measures are calculated across the distribution of
-#' trait vectors.  Unlike classical sensitivity, specificity and concordance, the measures then depend upon the
-#' distribution of traits in the input data, which may differ from that in the population.
+#' Family-wise measures consider the prediction of at least one event among several.
+#' Predicted and actual events must coincide in at least one case.
+#' For example, family-wise sensitivity is the probability that, for an individual with at least one event, the predicted risk
+#' exceeds the threshold for at least one of the events that did occur.
+#' Family-wise specificity is the probability that, for an individual with at least one non-event, the predicted risk is lower than the
+#' threshold for all the non-events.
 #'
-#' If \code{targetProb} is not specified, it is estimated from the \code{y} matrix, ignoring ascertainment.
+#' Family-wise concordance is the probability that given one individual with at least one event, and another with at least one non-event,
+#' the maximum predicted risk over all events that occurred in the former is higher than the maximum over all non-events in the latter.
+#' Note that under this definition an individual having both events and non-events can be either concordant or discordant with itself.
+#' Concordance is calculated by randomly drawing such pairs of individuals from \code{y}.
+#' If \code{nsample} is zero, all such pairs are drawn from \code{y}; this might be time-consuming.
+#' Therefore the default is not to calculate condcordance.
+#' However, a good estimate of concordance can be obtained from a limited number of random samples \code{nsample}.
 #'
-#' @param target Target trait vector for evaluating family-wise measures of accuracy.
-#' @param target2 Second target vector for calculating family-wise concordance.
-#' @param targetProb Probability of all the events occurring in \code{target}, used for calculating net benefit.
-#' @inheritParams eventWise
+#' \code{prev0}, \code{prev1}, \code{condprev0} and \code{condprev1} are only required to calculate relative utility, and can be omitted otherwise.
 
+#' @template sharedParams
+#' @template nsample
+#' @param prev0 Probability of at least one non-event, required for calculating relative utility.
+#' If NULL, which is the default, then \code{prev0} is estimated from the \code{y} matrix, ignoring ascertainment.
+#' @param prev1 Probability of at least one event, required for calculating relative utility.
+#' If NULL, which is the default, then \code{prev1} is estimated from the \code{y} matrix, ignoring ascertainment.
+#' @param condprev0 Probability of at least one non-event, conditional on the risk predictions being equal to \code{thresh}.
+#' If NULL, which is the default, then \code{prev} is set to 1 - the product of the elements of \code{thresh}.
+#' This working definition is exact when predictions and outcomes both are jointly independent.
+#' @param condprev1 Probability of at least one event, conditional on the risk predictions being equal to \code{thresh}.
+#' If NULL, which is the default, then \code{prev} is set to 1 - the product of the elements of (1-\code{thresh}).
+#' This working definition is exact when predictions and outcomes both are jointly independent.
 #'
 #' @export
-familyWise=function(x,y,thresh=NULL,target=NULL,target2=NULL,nsample=0,targetProb=NULL) {
+familyWise=function(x,y,thresh=NULL,prev0=NULL,prev1=NULL,nsample=NULL) {
 
   # coerce x and y to matrices
   x = as.matrix(x)
@@ -28,24 +45,10 @@ familyWise=function(x,y,thresh=NULL,target=NULL,target2=NULL,nsample=0,targetPro
     return(NULL)
   }
 
-  check=checkVectorMatrixDimensions(thresh,y)
-  if (!is.null(check)) {
-    print(paste("thresh",check))
-    return(NULL)
-  }
-
-  if (!is.null(target)) {
-    check=checkVectorMatrixDimensions(target,y)
+  if (!is.null(thresh)) {
+    check=checkVectorMatrixDimensions(thresh,y)
     if (!is.null(check)) {
-      print(paste("target",check))
-      return(NULL)
-    }
-  }
-
-  if (!is.null(target2)) {
-    check=checkVectorMatrixDimensions(target2,y)
-    if (!is.null(check)) {
-      print(paste("target2",check))
+      print(paste("thresh",check))
       return(NULL)
     }
   }
@@ -56,94 +59,80 @@ familyWise=function(x,y,thresh=NULL,target=NULL,target2=NULL,nsample=0,targetPro
     return(NULL)
   }
 
-  # predicted binary traits
-  predictedTrait=x
-  for(i in 1:dim(x)[1]) predictedTrait[i,]=x[i,]>=thresh
+  sens = NULL
+  spec = NULL
+  PPV = NULL
+  NPV = NULL
+  C = NULL
+  RU = NULL
 
-  # rows of y matching target
-  targetIndex = apply(y,1,function(x) sum(x!=target)==0)
+  nsubject = nrow(y)
+  ntrait = ncol(y)
+  predictedTrait = matrix(0, nrow=nsubject, ncol=ntrait)
 
-  # sensitivity
-  sens = mean(y[targetIndex,] %*% t(predictedTrait[targetIndex,])>0)
+  if (!is.null(thresh)) {
 
-  # specificity
-  spec = mean((1-y[targetIndex,]) %*% t(1-predictedTrait[targetIndex,])>0)
+    # predicted binary traits
+    for(i in 1:nsubject) predictedTrait[i,] = x[i,]>=thresh
 
-  # rows of predictedTrait matching target
-  targetPredictedTrait = apply(predictedTrait,1,function(x) sum(x!=target)==0)
+    # sensitivity
+    sens = sum(apply(y*predictedTrait,1,max)) / sum(apply(y,1,max))
 
-  # positive predictive value
-  PPV = mean(predictedTrait[targetPredictedTrait,] %*% t(y[targetPredictedTrait,])>0)
+    # specificity
+    spec = 1- sum(apply((1-y)*predictedTrait,1,max)) / sum(apply(1-y,1,max))
 
-  # negative predictive value
-  NPV = mean((1-predictedTrait[targetPredictedTrait,]) %*% t(1-y[targetPredictedTrait,])>0)
+    # positive predictive value
+    PPV = sum(apply(predictedTrait*y,1,max)) / sum(apply(predictedTrait,1,max))
 
-  # rows of y matching target2
-  target2Index = apply(y,1,function(x) sum(x!=target2)==0)
+    # negative predictive value
+    NPV = 1- sum(apply((1-predictedTrait)*y,1,max)) / sum(apply(1-predictedTrait,1,max))
+
+    # relative utility
+    # probability of at least one non-event
+    if (is.null(prev0)) prev0 = 1-mean(apply(y,1,min))
+    # probability of at least one event
+    if (is.null(prev1)) prev1 = mean(apply(y,1,max))
+    # probability of at least one non-event, given predictions at the threshold
+    if (is.null(condprev0)) condprev0 = 1-prod(thresh)
+    # probability of at least one event, given predictions at the threshold
+    if (is.null(condprev1)) condprev1 = 1-prod(1-thresh)
+    RU = sens - (1-spec) * condprev1/condprev1 * prev0/prev1
+
+  }
 
   # concordance
-  # complete enumeration
-  if (nsample==0) {
-    C = 0
-    Ccount = 0
-    for(i in which(targetIndex)) {
-      for(j in which(target2Index)) {
-        if (!identical(y[i,], y[j,])) {
-          C = C + ( t(y[i,]>y[j,]) %*% (x[i,]>x[j,]) + t(y[i,]<y[j,]) %*% (x[i,]<x[j,]) >0)
-          Ccount = Ccount + 1
-        }
-      }
-    }
-    C = as.numeric(C/Ccount)
-  }
-  # random sampling
-  else {
-    isample=sample(which(targetIndex),nsample,replace=TRUE)
-    jsample=sample(which(target2Index),nsample,replace=TRUE)
+  if (!is.null(nsample)) {
     Cnumer = 0
     Cdenom = 0
-    for(i in 1:nsample) {
-      if (!identical(y[isample[i],], y[jsample[i],])) {
-        # select pairs in which one score is systematically higher than the other
-        if ( t(y[isample[i],]!=y[jsample[i],]) %*% (x[isample[i],]<x[jsample[i],]) == 0 |
-             t(y[isample[i],]!=y[jsample[i],]) %*% (x[isample[i],]>x[jsample[i],]) == 0 ) {
-          Cnumer = Cnumer + ( t(y[isample[i],]>y[jsample[i],]) %*% (x[isample[i],]>x[jsample[i],]) +
-                    t(y[isample[i],]<y[jsample[i],]) %*% (x[isample[i],]<x[jsample[i],]) >0)
+    # complete enumeration
+    if (nsample==0) {
+      for(i in which(apply(y,1,max)==1)) {
+        for(j in which(apply(y,1,min)==0)) {
+          Cnumer = Cnumer + ( max(x[i,y[i,]==1]) > max(x[j,y[j,]==0]) )
           Cdenom = Cdenom + 1
         }
       }
     }
-    C = as.numeric(Cnumer/Cdenom)
-    print(Cdenom)
+    # random sampling
+    else {
+      isample=sample(which(apply(y,1,max)==1),nsample,replace=TRUE)
+      jsample=sample(which(apply(y,1,min)==0),nsample,replace=TRUE)
 
-  }
-
-  # net benefit
-  # probability of at least one event in the target vector
-  if (is.null(targetProb)) {
-    yMatch = 0
-    for(i in 1:dim(y)[1]) {
-      # changed this to allow for NULL target, even though it gives a net benefit of NaN
-      #yMatch = yMatch + (target %*% (y[i,]==target) > 0)
-      yMatch = yMatch + (y[i,] %*% target > 0)
+      Cnumer = 0
+      Cdenom = 0
+      for(i in 1:nsample) {
+        Cnumer = Cnumer + ( max(x[isample[i],y[isample[i],]==1]) > max(x[jsample[i],y[jsample[i],]==0]) )
+      }
+      Cdenom = nsample
     }
-    targetProb = yMatch/dim(y)[1]
+    C = as.numeric(Cnumer/Cdenom)
   }
-
-  # cost/benefit ratio
-  costBenefit = min(thresh[which(target==1)])
-  costBenefit = costBenefit/(1-costBenefit)
-
-  # joint specificity for complementary target
-  cTargetIndex = apply(y,1,function(x) sum(x!=(1-target))==0)
-  jointSpec = mean((1-y[cTargetIndex,]) %*% t(predictedTrait[cTargetIndex,])==0)
-  NB = sens - (1-targetProb)/targetProb*costBenefit * (1-jointSpec)
 
   list(sens=sens,
        spec=spec,
        PPV=PPV,
        NPV=NPV,
        C=C,
-       NB=NB
+       RU=RU
   )
 }

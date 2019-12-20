@@ -1,24 +1,30 @@
 #' Analytic screening measures of predictive accuracy
 #'
-#' Analytic calculation of screening sensitivity, specificity, positive and negative predictive value, concordance and net benefit, under a multivariate liability threshold model.
+#' Analytic calculation of screening sensitivity, specificity, positive and negative predictive value, concordance and relative utility, under a multivariate liability threshold model.
 #'
-#' Details here
+#' Screening measures consider the prediction of at least one event, without regard to whether the correct events are predicted.
+#' For example, screening sensitivity is the probability that, for an individual with at least one event, the predicted risk
+#' exceeds the threshold for at least one trait (but not necessary the ones that did occur).
+#' Screening specificity is the probability that, for an individual with no events, the predicted risk is lower than the
+#' threshold for all traits.
+#'
+#' Screening concordance is the probability that given one individual with at least one event, and another without any,
+#' the maximum predicted risk over all traits is higher in the former individual.
+#' It is calculated by randomly simulating \code{nsample} such pairs of individuals from the specified model.
 
-#' @param VL Variance-covariance matrix of liability.  Must have 1 on diagonal.
-#' @param VX Variance-covariance matrix of predictors.  Diagonal entries are the liability variances explained for each trait ("heritabilities")
-#' @param VLX Cross-covariance matrix between liabilities and predictors.  Entry on row i, column j, is covariance between liability i and predictor j.
-#' @param thresh Vector of risk thresholds for predicting an event.
-#' @param prev Vector of prevalences, ie population risks, for each trait
+#' @template analyticParams
+#' @template analyticnsample
 #'
 #' @export
-analyticScreening = function(VL,VX,VLX,thresh,prev) {
+analyticScreening = function(VL,VX,VLX=NULL,thresh=NULL,prev,nsample=NULL) {
 
-  # coerce VL, VX and VLX to matrices
+  # coerce VL and VX to matrices
+  if (is.null(VLX)) VLX = VX
   VL = as.matrix(VL)
   VX = as.matrix(VX)
   VLX = as.matrix(VLX)
 
-  # coerce prev, thresh and target to vectors
+  # coerce prev and thresh to vectors
   prev = as.vector(prev)
   thresh = as.vector(thresh)
 
@@ -34,152 +40,129 @@ analyticScreening = function(VL,VX,VLX,thresh,prev) {
     return(NULL)
   }
 
+  if (!is.null(thresh)) {
+    check=checkVectorMatrixDimensions(thresh,VL)
+    if (!is.null(check)) {
+      print(paste("thresh",check))
+      return(NULL)
+    }
+  }
+
   check=checkVectorMatrixDimensions(prev,VL)
   if (!is.null(check)) {
     print(paste("prev",check))
     return(NULL)
   }
 
-  check=checkVectorMatrixDimensions(thresh,VL)
-  if (!is.null(check)) {
-    print(paste("thresh",check))
-    return(NULL)
-  }
+  ntrait = ncol(VL)
+
+  sens = NULL
+  spec = NULL
+  PPV = NULL
+  NPV = NULL
+  C = NULL
+  RU = NULL
 
   # liability thresholds
   liabThresh = qnorm(prev,lower=F)
 
-  # scores corresponding to the risk thresholds
-  scoreThresh = liabThresh - qnorm(1-thresh) * sqrt(1-diag(VLX))
+  if (!is.null(thresh)) {
 
-  # truncation points for multivariate normal liability
-  lowerTrunc = rep(-Inf,length(thresh))
-  upperTrunc = liabThresh
+    # scores corresponding to the risk thresholds
+    scoreThresh = liabThresh - qnorm(1-thresh) * sqrt(1-diag(VX))
 
-  # prevalence of subjects with no traits
-  prev0 = pmvnorm(lower=lowerTrunc,upper=upperTrunc,sigma=VL)
-  attributes(prev0) = NULL
+    # probability of no events
+    probNoEvents = pmvnorm(lower=rep(-Inf,ntrait), upper=liabThresh, sigma=VL)
 
-  # mean liability in subjects with at least one trait
-  liabTrunc = tmvtnorm::mtmvnorm(sigma=VL, lower=lowerTrunc, upper=upperTrunc)
-  liabTruncMean = -prev0/(1-prev0) * liabTrunc$tmean
+    # probability of no predicted events
+    probNoPredictions = pmvnorm(lower=rep(-Inf,ntrait), upper=scoreThresh, sigma=VX)
 
-  # variance of liability in subjects with at least one trait
-  liabTruncVar = (VL - prev0 * (liabTrunc$tvar + liabTrunc$tmean %*% t(liabTrunc$tmean))) / (1-prev0) -
-    prev0^2/(1-prev0)^2 * liabTrunc$tmean %*% t(liabTrunc$tmean)
+    # probability of no events and no predicted events
+    probNoEventsNoPredictions = pmvnorm(lower=rep(-Inf,2*ntrait), upper=c(liabThresh,scoreThresh), sigma=rbind(cbind(VL,VLX),cbind(t(VLX),VX)))
 
-  # mean score in selected subjects
-  invVL = solve(VL)
-  meanScoreTrunc = as.vector(VLX %*% invVL %*% liabTruncMean)
-  # covariance matrix of scores in selected subjects
-  varScoreTrunc = VX - VLX %*% (invVL - invVL %*% liabTruncVar %*% invVL) %*% t(VLX)
-  # make varScoreTrunc symmetrical
-  varScoreTrunc = (varScoreTrunc + t(varScoreTrunc)) / 2
+    # sensitivity
+    sens = 1 - (probNoPredictions-probNoEventsNoPredictions) / (1-probNoEvents)
+    attributes(sens) = NULL
 
-  # sensitivity
-  lowerSens = rep(-Inf,length(thresh))
-  upperSens = scoreThresh
-  sens = 1 - pmvnorm(lower=lowerSens, upper=upperSens, mean=meanScoreTrunc, sigma=varScoreTrunc)
-  attributes(sens) = NULL
+    # specificity
+    spec = probNoEventsNoPredictions / probNoEvents
+    attributes(spec) = NULL
 
-  # specificity
-  meanScoreTrunc = as.vector(VLX %*% invVL %*% liabTrunc$tmean)
-  varScoreTrunc = VX - VLX %*% (invVL - invVL %*% liabTrunc$tvar %*% invVL) %*% t(VLX)
-  varScoreTrunc = (varScoreTrunc + t(varScoreTrunc)) / 2
-  lowerSpec = rep(-Inf,length(thresh))
-  upperSpec = scoreThresh
-  spec = pmvnorm(lower=lowerSpec, upper=upperSpec, mean=meanScoreTrunc, sigma=varScoreTrunc)
-  attributes(spec) = NULL
+    # PPV
+    PPV = 1 - (probNoEvents-probNoEventsNoPredictions) / (1-probNoPredictions)
+    attributes(PPV) = NULL
 
-  ### NOW FOR PPV AND NPV
+    # NPV
+    NPV = probNoEventsNoPredictions / probNoPredictions
+    attributes(NPV) = NULL
 
-  # prevalence of subjects with no predicted traits
-  lowerTrunc=rep(-Inf,length(thresh))
-  upperTrunc=scoreThresh
-  prev0 = pmvnorm(lower=lowerTrunc,upper=upperTrunc,sigma=VX)
-  attributes(prev0) = NULL
+    # relative utility
+    # probability of no events given predictions at the threshold
+    probNoEventsConditional = pmvnorm(lower=rep(-Inf,ntrait), upper=liabThresh, mean=as.vector((VLX %*% solve(VX) %*% as.matrix(thresh))), sigma=VL-VLX %*% solve(VX) %*% t(VLX))
+    #RU = sens - (1-spec) * (1-prod(1-thresh))/prod(1-thresh) * probNoEvents/(1-probNoEvents)
+    RU = sens - (1-spec) * (1-probNoEventsConditional)/probNoEventsConditional * probNoEvents/(1-probNoEvents)
+    attributes(RU) = NULL
 
-  # mean score in subjects with no predicted traits
-  scoreTrunc = tmvtnorm::mtmvnorm(sigma=VX, lower=lowerTrunc, upper=upperTrunc)
-  scoreTruncMean = -prev0/(1-prev0) * scoreTrunc$tmean
-
-  # variance of score in subjects with no predicted traits
-  scoreTruncVar = (VX - prev0 * (scoreTrunc$tvar + scoreTrunc$tmean %*% t(scoreTrunc$tmean))) / (1-prev0) -
-    prev0^2/(1-prev0)^2 * scoreTrunc$tmean %*% t(scoreTrunc$tmean)
-
-  # mean liability in selected subjects
-  invVX = solve(VX)
-  meanLiabTrunc = as.vector(t(VLX) %*% invVX %*% scoreTruncMean)
-  # covariance matrix of liabilities in selected subjects
-  varLiabTrunc = VL - t(VLX) %*% (invVX - invVX %*% scoreTruncVar %*% invVX) %*% VLX
-  # make varLiabTrunc symmetrical
-  varLiabTrunc = (varLiabTrunc + t(varLiabTrunc)) / 2
-
-  # PPV
-  lowerPPV = rep(-Inf,length(thresh))
-  upperPPV = liabThresh
-  PPV = 1 - pmvnorm(lower=lowerPPV, upper=upperPPV, mean=meanLiabTrunc, sigma=varLiabTrunc)
-  attributes(PPV) = NULL
-
-  # NPV
-  meanLiabTrunc = as.vector(t(VLX) %*% invVX %*% scoreTrunc$tmean)
-  varLiabTrunc = VL - t(VLX) %*% (invVX - invVX %*% scoreTrunc$tvar %*% invVX) %*% VLX
-  varLiabTrunc = (varLiabTrunc + t(varLiabTrunc)) / 2
-  lowerNPV = rep(-Inf,length(thresh))
-  upperNPV = liabThresh
-  NPV = pmvnorm(lower=lowerNPV, upper=upperNPV, mean=meanLiabTrunc, sigma=varLiabTrunc)
-  attributes(NPV) = NULL
+  }
 
   # concordance
-  # truncation points for multivariate normal liability
-  lowerTrunc = rep(-Inf,length(thresh))
-  upperTrunc = liabThresh
+  if (!is.null(nsample)) {
 
-  # prevalence of subjects with no traits
-  prev0 = pmvnorm(lower=lowerTrunc,upper=upperTrunc,sigma=VL)
-  attributes(prev0) = NULL
+    # probability of no events
+    probNoEvents = pmvnorm(lower=rep(-Inf,ntrait), upper=liabThresh, sigma=VL)
+    attributes(probNoEvents) = NULL
 
-  # mean liability in subjects with no traits
-  liabTrunc = tmvtnorm::mtmvnorm(sigma=VL, lower=lowerTrunc, upper=upperTrunc)
-  # in subjects with at least one trait
-  liabTruncMean = -prev0/(1-prev0) * liabTrunc$tmean
+    # mean liability in subjects with at least one event
+    liabTrunc = tmvtnorm::mtmvnorm(sigma=VL, lower=rep(-Inf,ntrait), upper=liabThresh)
+    liabTruncMean = -probNoEvents/(1-probNoEvents) * liabTrunc$tmean
 
-  # variance of liability in subjects with at least one trait
-  liabTruncVar = (VL - prev0 * (liabTrunc$tvar + liabTrunc$tmean %*% t(liabTrunc$tmean))) / (1-prev0) -
-    prev0^2/(1-prev0)^2 * liabTrunc$tmean %*% t(liabTrunc$tmean)
+    # variance of liability in subjects with at least one event
+    liabTruncVar = (VL - probNoEvents * (liabTrunc$tvar + liabTrunc$tmean %*% t(liabTrunc$tmean))) / (1-probNoEvents) -
+      probNoEvents^2/(1-probNoEvents)^2 * liabTrunc$tmean %*% t(liabTrunc$tmean)
 
-  # mean score in subjects with at least one trait
-  invVL = solve(VL)
-  meanScoreTrunc = as.vector(VLX %*% invVL %*% liabTruncMean)
-  # covariance matrix of scores in selected subjects
-  varScoreTrunc = VX - VLX %*% (invVL - invVL %*% liabTruncVar %*% invVL) %*% t(VLX)
+    # mean score in subjects with at least one event
+    invVL = solve(VL)
+    meanScoreSens = as.vector(VLX %*% invVL %*% liabTruncMean)
+    # covariance matrix of scores in subjects with at least one event
+    varScoreSens = VX - VLX %*% (invVL - invVL %*% liabTruncVar %*% invVL) %*% t(VLX)
+    # make varScoreSens symmetrical
+    varScoreSens = (varScoreSens + t(varScoreSens)) / 2
 
-  # now subtract mean score in subjects with no traits
-  meanScoreTrunc = meanScoreTrunc - as.vector(VLX %*% invVL %*% liabTrunc$tmean)
-  varScoreTrunc = varScoreTrunc + VX - VLX %*% (invVL - invVL %*% liabTrunc$tvar %*% invVL) %*% t(VLX)
-  # make varScoreTrunc symmetrical
-  varScoreTrunc = (varScoreTrunc + t(varScoreTrunc)) / 2
+    # mean score in subjects with no evemts
+    meanScoreSpec = as.vector(VLX %*% invVL %*% liabTrunc$tmean)
+    # covariance matrix of scores in subejcts with no events
+    varScoreSpec = VX - VLX %*% (invVL - invVL %*% liabTrunc$tvar %*% invVL) %*% t(VLX)
+    # make varScoreSpec symmetrical
+    varScoreSpec = (varScoreSpec + t(varScoreSpec)) / 2
 
-  lowerTrunc=rep(-Inf,length(thresh))
-  upperTrunc=rep(0,length(thresh))
-  C = 1-pmvnorm(lower=lowerTrunc, upper=upperTrunc, mean=meanScoreTrunc, sigma=varScoreTrunc)
-  attributes(C) = NULL
+    # sample of scores in subjects with at least one event
+    sensSample = rmvnorm(nsample,mean=meanScoreSens,sigma=varScoreSens)
+    # convert to risks
+    risk=matrix(nrow=nsample,ncol=ntrait)
+    for(i in 1:ntrait) {
+      risk[,i]=pnorm(liabThresh[i],mean=sensSample[,i],sd=sqrt(1-VX[i,i]),lower=F)
+    }
+    # take maximum for each subject
+    sensSample = apply(risk,1,max)
 
-  # net benefit
-  # truncation points for multivariate normal liability
-  lowerTrunc = rep(-Inf,length(thresh))
-  upperTrunc = liabThresh
+    # sample of scores in subjects with no events
+    specSample = rmvnorm(nsample,mean=meanScoreSpec,sigma=varScoreSpec)
+    # convert to risks
+    risk=matrix(nrow=nsample,ncol=ntrait)
+    for(i in 1:ntrait) {
+      risk[,i]=pnorm(liabThresh[i],mean=specSample[,i],sd=sqrt(1-VX[i,i]),lower=F)
+    }
+    # take maximum for each subject
+    specSample = apply(risk,1,max)
 
-  # prevalence of subjects with at least one trait
-  targetProb = pmvnorm(lower=lowerTrunc,upper=upperTrunc,sigma=VL)
-  attributes(targetProb) = NULL
-
-  NB = sens - (1-spec) * min(thresh/(1-thresh)) * (1-targetProb)/targetProb
+    # concordance
+    C = mean(sensSample > specSample)
+  }
 
   return(list(sens=sens,
               spec=spec,
               PPV=PPV,
               NPV=NPV,
               C=C,
-              NB=NB))
+              RU=RU))
 }

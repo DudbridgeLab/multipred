@@ -1,30 +1,34 @@
 #' Analytic family-wise measures of predictive accuracy
 #'
-#' Analytic calculation of family-wise sensitivity, specificity, positive and negative predictive value, concordance and net benefit, under a multivariate liability threshold model.
+#' Analytic calculation of family-wise sensitivity, specificity, positive and negative predictive value, concordance and relative utility, under a multivariate liability threshold model.
 #'
-#' Details here
-
-#' @param VL Variance-covariance matrix of liability.  Must have 1 on diagonal.
-#' @param VX Variance-covariance matrix of predictors.  Diagonal entries are the liability variances explained for each trait ("heritabilities")
-#' @param VLX Cross-covariance matrix between liabilities and predictors.  Entry on row i, column j, is covariance between liability i and predictor j.
-#' @param thresh Vector of risk thresholds for predicting an event.
-#' @param prev Vector of prevalences, ie population risks, for each trait
-#' @param target Target trait vector for calculating family-wise measures of accuracy.
-#' @param target2 Second target vector for calculating family-wise concordance.
-#' @param targetProb Probability of at least one of the events occurring in \code{target}, used for calculating net benefit.
+#' Family-wise measures consider the prediction of at least one event among several.
+#' Predicted and actual events must coincide in at least one case.
+#' For example, family-wise sensitivity is the probability that, for an individual with at least one event, the predicted risk
+#' exceeds the threshold for at least one of the events that did occur.
+#' Family-wise specificity is the probability that, for an individual with at least one non-event, the predicted risk is lower than the
+#' threshold for all the non-events.
+#'
+#' Family-wise concordance is the probability that given one individual with at least one event, and another with at least one non-event,
+#' the maximum predicted risk over all events that occurred in the former is higher than the maximum over all non-events in the latter.
+#' Note that under this definition an individual having both events and non-events can be either concordant or discordant with itself.
+#' Concordance is calculated by randomly simulating \code{nsample} such pairs of individuals from the specified model.
+#'
+#' @template analyticParams
+#' @template nsample
 #'
 #' @export
-analyticFamilyWise = function(VL,VX,VLX,thresh,prev,target,target2=NULL,targetProb) {
+analyticFamilyWise = function(VL,VX,VLX=NULL,thresh=NULL,prev,nsample=NULL) {
 
-  # coerce VL, VX and VLX to matrices
+  # coerce VL, VX and VX to matrices
+  if (is.null(VLX)) VLX = VX
   VL = as.matrix(VL)
   VX = as.matrix(VX)
   VLX = as.matrix(VLX)
 
-  # coerce prev, thresh and target to vectors
+  # coerce prev and thresh to vectors
   prev = as.vector(prev)
   thresh = as.vector(thresh)
-  target = as.vector(target)
 
   check=checkMatrixDimensions(VL,VX)
   if (!is.null(check)) {
@@ -38,10 +42,12 @@ analyticFamilyWise = function(VL,VX,VLX,thresh,prev,target,target2=NULL,targetPr
     return(NULL)
   }
 
-  check=checkVectorMatrixDimensions(thresh,VL)
-  if (!is.null(check)) {
-    print(paste("thresh",check))
-    return(NULL)
+  if (!is.null(thresh)) {
+    check=checkVectorMatrixDimensions(thresh,VL)
+    if (!is.null(check)) {
+      print(paste("thresh",check))
+      return(NULL)
+    }
   }
 
   check=checkVectorMatrixDimensions(prev,VL)
@@ -50,150 +56,154 @@ analyticFamilyWise = function(VL,VX,VLX,thresh,prev,target,target2=NULL,targetPr
     return(NULL)
   }
 
-  check=checkVectorMatrixDimensions(target,VL)
-  if (!is.null(check)) {
-    print(paste("target",check))
-    return(NULL)
-  }
+  ntrait = ncol(VL)
+
+  sens = NULL
+  spec = NULL
+  PPV = NULL
+  NPV = NULL
+  C = NULL
+  RU = NULL
 
   # liability thresholds
   liabThresh = qnorm(prev,lower=F)
 
-  # scores corresponding to the risk thresholds
-  scoreThresh = liabThresh - qnorm(1-thresh) * sqrt(1-diag(VLX))
-
-  # truncation points for multivariate normal liability
-  lowerTrunc = rep(-Inf,length(target))
-  lowerTrunc[target==1] = liabThresh[target==1]
-  upperTrunc = rep(Inf,length(target))
-  upperTrunc[target==0] = liabThresh[target==0]
-
-  # mean liability in subjects with target traits
-  liabTrunc = tmvtnorm::mtmvnorm(sigma=VL, lower=lowerTrunc, upper=upperTrunc)
-
-  # mean score in selected subjects
-  invVL = solve(VL)
-  meanScoreTrunc = as.vector(VLX %*% invVL %*% liabTrunc$tmean)
-  # covariance matrix of scores in selected subjects
-  varScoreTrunc = VX - VLX %*% (invVL - invVL %*% liabTrunc$tvar %*% invVL) %*% t(VLX)
-  # make varScoreTrunc symmetrical
-  varScoreTrunc = (varScoreTrunc + t(varScoreTrunc)) / 2
-
-  # sensitivity
-  lowerSens = rep(-Inf,length(target))
-  upperSens = scoreThresh
-  upperSens[target==0] = Inf
-  sens = 1-pmvnorm(lower=lowerSens, upper=upperSens, mean=meanScoreTrunc, sigma=varScoreTrunc)
-  attributes(sens) = NULL
-
-  # specificity
-  lowerSpec = scoreThresh
-  lowerSpec[target==1] = -Inf
-  upperSpec = rep(Inf,length(target))
-  spec = 1-pmvnorm(lower=lowerSpec, upper=upperSpec, mean=meanScoreTrunc, sigma=varScoreTrunc)
-  attributes(spec) = NULL
-
-  # truncation points for multivariate normal scores
-  lowerTrunc = rep(-Inf,length(target))
-  lowerTrunc[target==1] = scoreThresh[target==1]
-  upperTrunc = rep(Inf,length(target))
-  upperTrunc[target==0] = scoreThresh[target==0]
-
-  # mean score in subjects with target predictions
-  scoreTrunc = tmvtnorm::mtmvnorm(sigma=VX, lower=lowerTrunc, upper=upperTrunc)
-
-  # mean liability in selected subjects
-  invVX = solve(VX)
-  meanLiabTrunc = as.vector(t(VLX) %*% invVX %*% scoreTrunc$tmean)
-  # covariance matrix of liability in selected subjects
-  varLiabTrunc = VL - t(VLX) %*% (invVX - invVX %*% scoreTrunc$tvar %*% invVX) %*% VLX
-  # make varLiabTrunc symmetrical
-  varLiabTrunc = (varLiabTrunc + t(varLiabTrunc)) / 2
-
-  # positive predictive value
-  lowerPPV = rep(-Inf,length(target))
-  upperPPV = liabThresh
-  upperPPV[target==0] = Inf
-  PPV = 1-pmvnorm(lower=lowerPPV, upper=upperPPV, mean=meanLiabTrunc, sigma=varLiabTrunc)
-  attributes(PPV) = NULL
-
-  # negative predictive value
-  lowerNPV = liabThresh
-  lowerNPV[target==1] = -Inf
-  upperNPV = rep(Inf,length(target))
-  NPV = 1-pmvnorm(lower=lowerNPV, upper=upperNPV, mean=meanLiabTrunc, sigma=varLiabTrunc)
-  attributes(NPV) = NULL
-
-  # concordance
-  if (is.null(target2)) {
-    C = 0
-  }
-  else {
-    # distribution of scores for subjects with target2
-    # truncation points for multivariate normal liability
-    lowerTrunc = rep(-Inf,length(target2))
-    lowerTrunc[target2==1] = liabThresh[target2==1]
-    upperTrunc = rep(Inf,length(target2))
-    upperTrunc[target2==0] = liabThresh[target2==0]
-
-    # mean liability in subjects with target2 traits
-    liabTrunc = tmvtnorm::mtmvnorm(sigma=VL, lower=lowerTrunc, upper=upperTrunc)
-
-    # distribution of liability differeces between subjects with target and target2
-    # mean score in selected subjects
-    invVL = solve(VL)
-    meanScoreTrunc = meanScoreTrunc - as.vector(VLX %*% invVL %*% liabTrunc$tmean)
-    # covariance matrix of scores in selected subjects
-    varScoreTrunc = varScoreTrunc + VX - VLX %*% (invVL - invVL %*% liabTrunc$tvar %*% invVL) %*% t(VLX)
-    # make varScoreTrunc symmetrical
-    varScoreTrunc = (varScoreTrunc + t(varScoreTrunc)) / 2
-
+  if (!is.null(nsample)) {
     # concordance
-    lowerTrunc = rep(-Inf,length(thresh))
-    lowerTrunc[target<target2] = 0
-    upperTrunc = rep(Inf,length(thresh))
-    upperTrunc[target>target2] = 0
-    C = 1-pmvnorm(lower=lowerTrunc, upper=upperTrunc, mean=meanScoreTrunc, sigma=varScoreTrunc)
-    attributes(C) = NULL
+    # jointly simulate liabilities and scores
+    LX=rmvnorm(nsample,sigma=rbind(cbind(VL,VLX),cbind(t(VLX),VX)))
+    risk=matrix(nrow=nsample,ncol=ntrait)
+    for(i in 1:ntrait) {
+      risk[,i]=pnorm(liabThresh[i],mean=LX[,i+ntrait],sd=sqrt(1-VX[i,i]),lower=F)
+    }
+    w = which(apply(t(LX[,1:ntrait]) > liabThresh, 2, max)==1)
+    sensSample = apply( t(t(LX[w,1:ntrait]) > liabThresh) * risk[w,], 1,function(x) max(x[x!=0]))
+    w = which(apply(t(LX[,1:ntrait]) < liabThresh, 2, max)==1)
+    specSample = apply( t(t(LX[w,1:ntrait]) < liabThresh) * risk[w,], 1,function(x) max(x[x!=0]))
+
+    C = mean(sample(sensSample,nsample,replace=TRUE) > sample(specSample,nsample,replace=TRUE))
   }
 
-  # net benefit calculations
-  # cost/benefit ratio
-  costBenefit = min(thresh[which(target==1)])
-  costBenefit = costBenefit/(1-costBenefit)
+  if (!is.null(thresh)) {
 
-  # joint specificity for complementary target
-  # truncation points for multivariate normal liability
-  lowerTrunc = rep(-Inf,length(target))
-  lowerTrunc[target==0] = liabThresh[target==0]
-  upperTrunc = rep(Inf,length(target))
-  upperTrunc[target==1] = liabThresh[target==1]
+    # scores corresponding to the risk thresholds
+    scoreThresh = liabThresh - qnorm(1-thresh) * sqrt(1-diag(VX))
 
-  # mean liability in subjects with target traits
-  liabTrunc = tmvtnorm::mtmvnorm(sigma=VL, lower=lowerTrunc, upper=upperTrunc)
+    # sensitivity
 
-  # mean score in selected subjects
-  invVL = solve(VL)
-  meanScoreTrunc = as.vector(VLX %*% invVL %*% liabTrunc$tmean)
-  # covariance matrix of scores in selected subjects
-  varScoreTrunc = VX - VLX %*% (invVL - invVL %*% liabTrunc$tvar %*% invVL) %*% t(VLX)
-  # make varScoreTrunc symmetrical
-  varScoreTrunc = (varScoreTrunc + t(varScoreTrunc)) / 2
+    # probability of no events
+    lowerTrunc = rep(-Inf,ntrait)
+    upperTrunc = liabThresh
+    probNoEvents = pmvnorm(lower=lowerTrunc,upper=upperTrunc,sigma=VL)
+    attributes(probNoEvents) = NULL
 
-  # specificity
-  lowerSpec = rep(-Inf,length(target))
-  upperSpec = scoreThresh
-  upperSpec[target==0] = Inf
-  jointSpec = pmvnorm(lower=lowerSpec, upper=upperSpec, mean=meanScoreTrunc, sigma=varScoreTrunc)
-  attributes(jointSpec) = NULL
+    # loop through event vectors with at least one event
+    sens = 0
+    for(i in 1:(2^ntrait-1)) {
+      event = as.numeric(intToBits(i)[1:ntrait])
+      lowerSens = rep(-Inf,ntrait)
+      lowerSens[event==1] = liabThresh[event==1]
+      upperSens = rep(Inf,ntrait)
+      upperSens[event==0] = liabThresh[event==0]
+      lowerSens =  c(lowerSens,rep(-Inf,ntrait))
+      eventScore = scoreThresh
+      eventScore[event==0] = Inf
+      upperSens = c(upperSens,eventScore)
+      sens = sens + pmvnorm(lower=lowerSens, upper=upperSens, sigma=rbind(cbind(VL,VLX),cbind(t(VLX),VX)))
+    }
+    sens = 1-sens/(1-probNoEvents)
+    attributes(sens) = NULL
 
-  NB = sens - (1-targetProb)/targetProb*costBenefit * (1-jointSpec)
+    # specificity
+
+    # probability of all events
+    lowerTrunc = liabThresh
+    upperTrunc = rep(Inf,ntrait)
+    probAllEvents = pmvnorm(lower=lowerTrunc,upper=upperTrunc,sigma=VL)
+    attributes(probAllEvents) = NULL
+
+    # loop through event vectors with at least one non-event
+    spec = 0
+    for(i in 0:(2^ntrait-2)) {
+      event = as.numeric(intToBits(i)[1:ntrait])
+      lowerSpec = rep(-Inf,ntrait)
+      lowerSpec[event==1] = liabThresh[event==1]
+      upperSpec = rep(Inf,ntrait)
+      upperSpec[event==0] = liabThresh[event==0]
+      lowerSpec =  c(lowerSpec,rep(-Inf,ntrait))
+      eventScore = scoreThresh
+      eventScore[event==1] = Inf
+      upperSpec = c(upperSpec,eventScore)
+      spec = spec + pmvnorm(lower=lowerSpec, upper=upperSpec, sigma=rbind(cbind(VL,VLX),cbind(t(VLX),VX)))
+    }
+    spec = spec/(1-probAllEvents)
+    attributes(spec) = NULL
+
+    # relative utility
+    # probability of all events given predictions at the threshold
+    probAllEventsConditional = pmvnorm(lower=liabThresh, upper=ref(Inf,ntrait), mean=as.vector(VLX %*% solve(VX) %*% as.matrix(thresh)), sigma=VL-VLX %*% solve(VX) %*% t(VLX))
+    # probability of no events given predictions at the threshold
+    probNoEventsConditional = pmvnorm(lower=rep(-Inf,thresh), upper=liabThresh, mean=as.vector(VLX %*% solve(VX) %*% as.matrix(thresh)), sigma=VL-VLX %*% solve(VX) %*% t(VLX))
+
+    RU = sens - (1-spec) * (1-probNoEventsConditional)/(1-probAllEventsConditional) * (1-probAllEvents)/(1-probNoEvents)
+
+    # positive predictive value
+
+    # prevalence of subjects with no predicted events
+    lowerTrunc = rep(-Inf,ntrait)
+    upperTrunc = scoreThresh
+    probNoEvents = pmvnorm(lower=lowerTrunc,upper=upperTrunc,sigma=VX)
+    attributes(probNoEvents) = NULL
+
+    # loop through event vectors with at least one predicted event
+    PPV = 0
+    for(i in 1:(2^ntrait-1)) {
+      event = as.numeric(intToBits(i)[1:ntrait])
+      lowerPPV = rep(-Inf,ntrait)
+      lowerPPV[event==1] = scoreThresh[event==1]
+      upperPPV = rep(Inf,ntrait)
+      upperPPV[event==0] = scoreThresh[event==0]
+      lowerPPV =  c(lowerPPV,rep(-Inf,ntrait))
+      eventLiab = liabThresh
+      eventLiab[event==0] = Inf
+      upperPPV = c(upperPPV,eventLiab)
+      PPV = PPV + pmvnorm(lower=lowerPPV, upper=upperPPV, sigma=rbind(cbind(VX,t(VLX)),cbind(VLX,VL)))
+    }
+    PPV = 1-PPV/(1-probNoEvents)
+    attributes(PPV) = NULL
+
+    # negative predictive value
+
+    # prevalence of subjects with all predicted events
+    lowerTrunc = scoreThresh
+    upperTrunc = rep(Inf,ntrait)
+    probAllEvents = pmvnorm(lower=lowerTrunc,upper=upperTrunc,sigma=VX)
+    attributes(probAllEvents) = NULL
+
+    # loop through event vectors with at least one predicted non-event
+    NPV = 0
+    for(i in 0:(2^ntrait-2)) {
+      event = as.numeric(intToBits(i)[1:ntrait])
+      lowerNPV = rep(-Inf,ntrait)
+      lowerNPV[event==1] = scoreThresh[event==1]
+      upperNPV = rep(Inf,ntrait)
+      upperNPV[event==0] = scoreThresh[event==0]
+      lowerNPV =  c(lowerNPV,rep(-Inf,ntrait))
+      eventLiab = liabThresh
+      eventLiab[event==1] = Inf
+      upperNPV = c(upperNPV,eventLiab)
+      NPV = NPV + pmvnorm(lower=lowerNPV, upper=upperNPV, sigma=rbind(cbind(VX,t(VLX)),cbind(VLX,VL)))
+    }
+    NPV = NPV/(1-probAllEvents)
+    attributes(NPV) = NULL
+
+  }
 
   return(list(sens=sens,
               spec=spec,
               PPV=PPV,
               NPV=NPV,
               C=C,
-              NB=NB))
+              RU=RU))
 }
 
