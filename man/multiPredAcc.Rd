@@ -4,8 +4,15 @@
 \alias{multiPredAcc}
 \title{Calculate multi-trait measures of predictive accuracy}
 \usage{
-multiPredAcc(x, y, thresh = NULL, weight = NULL, sampleSize = 0, target,
-  target2)
+multiPredAcc(
+  x,
+  y,
+  thresh = NULL,
+  weight = NULL,
+  sampleSize = 0,
+  target,
+  target2
+)
 }
 \arguments{
 \item{x}{Matrix of predictions.  Each row corresponds to an individual, each column to a trait.  Each entry is a continuous value.}

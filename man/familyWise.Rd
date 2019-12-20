@@ -4,33 +4,67 @@
 \alias{familyWise}
 \title{Family-wise measures of predictive accuracy}
 \usage{
-familyWise(x, y, thresh = NULL, target = NULL, target2 = NULL,
-  sample = 0, prev = NULL)
+familyWise(x, y, thresh = NULL, prev0 = NULL, prev1 = NULL, nsample = NULL)
 }
 \arguments{
 \item{x}{Matrix of predicted risks.  Each row corresponds to an individual, each column to a trait.  Each entry should be a risk between 0 and 1.}
 
 \item{y}{Matrix of traits.  Each row corresponds to an individual, each column to a trait.  Must contain binary events coded as 0 and 1.}
 
-\item{thresh}{Vector of risk thresholds.  For each row of x, an event is predicted for each trait that exceeds the corresponding element of thresh.  These predictions are then compared to the elements of y.}
+\item{thresh}{Vector of risk thresholds.  For each row of x, an event is predicted for each trait that exceeds the corresponding element of thresh.  These predictions are then compared to the elements of y.
+If NULL, which is the default, concordance is the only measure that can be calculated.}
 
-\item{target}{Target trait vector for evaluating family-wise measures of accuracy.}
+\item{prev0}{Probability of at least one non-event, required for calculating relative utility.
+If NULL, which is the default, then \code{prev0} is estimated from the \code{y} matrix, ignoring ascertainment.}
 
-\item{target2}{Second target vector for calculating family-wise concordance.}
+\item{prev1}{Probability of at least one event, required for calculating relative utility.
+If NULL, which is the default, then \code{prev1} is estimated from the \code{y} matrix, ignoring ascertainment.}
 
-\item{sample}{Number of random samples to draw when estimating concordance.  Defaults to 0, in which case
-all pairs of individuals in x are considered.}
+\item{nsample}{Number of random pairs of samples drawn when estimating concordance.
+If NULL, which is the default, concordance is not calculated.
+If 0, all possible pairs are drawn from the data.}
 
-\item{prev}{Population prevalence of \code{target}.}
+\item{condprev0}{Probability of at least one non-event, conditional on the risk predictions being equal to \code{thresh}.
+If NULL, which is the default, then \code{prev} is set to 1 - the product of the elements of \code{thresh}.
+This working definition is exact when predictions and outcomes both are jointly independent.}
+
+\item{condprev1}{Probability of at least one event, conditional on the risk predictions being equal to \code{thresh}.
+If NULL, which is the default, then \code{prev} is set to 1 - the product of the elements of (1-\code{thresh}).
+This working definition is exact when predictions and outcomes both are jointly independent.}
+}
+\value{
+A list with the following components
+
+\code{sens} Sensitivity
+
+\code{spec} Specificity
+
+\code{PPV} Positive predictive value
+
+\code{NPV} Negative predictive value
+
+\code{C} Concordance
+
+\code{RU} Relative utility
 }
 \description{
-Calculates family-wise sensitivity, specificity, positive and negative predictive value, concordance and net benefit for a vector of predictors.
+Calculates family-wise sensitivity, specificity, positive and negative predictive value, concordance and relative utility for a vector of predictors.
 }
 \details{
-Family-wise measures consider the prediction of at least one event within a fixed target vector.
-If \code{target} is NULL, which is the default, then the marginal measures are calculated across the distribution of
-trait vectors.  Unlike classical sensitivity, specificity and concordance, the measures then depend upon the
-distribution of traits in the input data, which may differ from that in the population.
+Family-wise measures consider the prediction of at least one event among several.
+Predicted and actual events must coincide in at least one case.
+For example, family-wise sensitivity is the probability that, for an individual with at least one event, the predicted risk
+exceeds the threshold for at least one of the events that did occur.
+Family-wise specificity is the probability that, for an individual with at least one non-event, the predicted risk is lower than the
+threshold for all the non-events.
 
-If \code{prev} is not specified, it is estimated from the \code{y} matrix, ignoring ascertainment.
+Family-wise concordance is the probability that given one individual with at least one event, and another with at least one non-event,
+the maximum predicted risk over all events that occurred in the former is higher than the maximum over all non-events in the latter.
+Note that under this definition an individual having both events and non-events can be either concordant or discordant with itself.
+Concordance is calculated by randomly drawing such pairs of individuals from \code{y}.
+If \code{nsample} is zero, all such pairs are drawn from \code{y}; this might be time-consuming.
+Therefore the default is not to calculate condcordance.
+However, a good estimate of concordance can be obtained from a limited number of random samples \code{nsample}.
+
+\code{prev0}, \code{prev1}, \code{condprev0} and \code{condprev1} are only required to calculate relative utility, and can be omitted otherwise.
 }

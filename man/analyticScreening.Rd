@@ -4,24 +4,57 @@
 \alias{analyticScreening}
 \title{Analytic screening measures of predictive accuracy}
 \usage{
-analyticScreening(VL, VX, VLX, prev, thresh)
+analyticScreening(VL, VX, VLX = NULL, thresh = NULL, prev, nsample = NULL)
 }
 \arguments{
 \item{VL}{Variance-covariance matrix of liability.  Must have 1 on diagonal.}
 
-\item{VX}{Variance-covariance matrix of predictors.  Diagonal entries are the liability variances explained for each trait ("heritabilities")}
+\item{VX}{Variance-covariance matrix of predictors.}
 
-\item{VLX}{Cross-covariance matrix between liabilities and predictors.  Entry on row i, column j, is covariance between liability i and predictor j.}
+\item{VLX}{Cross-covariance matrix between liabilities and predictors.
+Entry on row i, column j, is covariance between liability i and predictor j.
+Diagonal entries are the liability variances explained for each trait.}
+
+\item{thresh}{Vector of risk thresholds for predicting an event.
+If NULL, which is the default, concordance is the only measure that can be calculated.}
 
 \item{prev}{Vector of prevalences, ie population risks, for each trait}
 
-\item{thresh}{Vector of risk thresholds for predicting an event.}
+\item{nsample}{Number of random samples drawn when estimating concordance.
+If NULL, which is the default, concordance is not calculated.}
+}
+\value{
+A list with the following components
 
-\item{target}{Target trait vector for calculating joint measures of accuracy.}
+\code{sens} Sensitivity
+
+\code{spec} Specificity
+
+\code{PPV} Positive predictive value
+
+\code{NPV} Negative predictive value
+
+\code{C} Concordance
+
+\code{RU} Relative utility
 }
 \description{
-Analytic calculation of screening sensitivity, specificity, positive and negative predictive value, concordance and net benefit, under a multivariate liability threshold model.
+Analytic calculation of screening sensitivity, specificity, positive and negative predictive value, concordance and relative utility, under a multivariate liability threshold model.
 }
 \details{
-Details here
+Screening measures consider the prediction of at least one event, without regard to whether the correct events are predicted.
+For example, screening sensitivity is the probability that, for an individual with at least one event, the predicted risk
+exceeds the threshold for at least one trait (but not necessary the ones that did occur).
+Screening specificity is the probability that, for an individual with no events, the predicted risk is lower than the
+threshold for all traits.
+
+Screening concordance is the probability that given one individual with at least one event, and another without any,
+the maximum predicted risk over all traits is higher in the former individual.
+It is calculated by randomly simulating \code{nsample} such pairs of individuals from the specified model.
+
+The \code{VL} matrix specifies covariance in liability between traits.
+In principle this can account for comorbidity or competing risks.
+The \code{VX} matrix specifies cross-covariance between liabilities and predictors.
+The diagonal entries are the liability variances explained by the corresponding predictors.
+The off-diagonal entries are the liability variances explained by predictors of the other traits.
 }

@@ -4,34 +4,58 @@
 \alias{joint}
 \title{Joint measures of predictive accuracy}
 \usage{
-joint(x, y, thresh = NULL, target = NULL, target2 = NULL, sample = 0,
-  prev = NULL)
+joint(x, y, thresh = NULL, prev = NULL, condprev = NULL, nsample = NULL)
 }
 \arguments{
 \item{x}{Matrix of predicted risks.  Each row corresponds to an individual, each column to a trait.  Each entry should be a risk between 0 and 1.}
 
 \item{y}{Matrix of traits.  Each row corresponds to an individual, each column to a trait.  Must contain binary events coded as 0 and 1.}
 
-\item{thresh}{Vector of risk thresholds.  For each row of x, an event is predicted for each trait that exceeds the corresponding element of thresh.  These predictions are then compared to the elements of y.}
+\item{thresh}{Vector of risk thresholds.  For each row of x, an event is predicted for each trait that exceeds the corresponding element of thresh.  These predictions are then compared to the elements of y.
+If NULL, which is the default, concordance is the only measure that can be calculated.}
 
-\item{target}{Target trait vector for evaluating joint measures of accuracy.
-If NULL the marginal measures are calculated across the distribution of trait vectors.}
+\item{prev}{Probability of all events occurring, required for calculating relative utility.
+If NULL, which is the default, then \code{prev} is estimated from the \code{y} matrix, ignoring ascertainment.}
 
-\item{target2}{Second target vector for calculating joint concordance.}
+\item{condprev}{Probability of all events occuring, conditional on the risk predictions being equal to \code{thresh}.
+If NULL, which is the default, then \code{prev} is set to the product of the elements of \code{thresh}.
+This working definition is exact when predictions and outcomes both are jointly independent.}
 
-\item{sample}{Number of random samples to draw when estimating concordance.  Defaults to 0, in which case
-all pairs of individuals in x are considered.}
+\item{nsample}{Number of random pairs of samples drawn when estimating concordance.
+If NULL, which is the default, concordance is not calculated.
+If 0, all possible pairs are drawn from the data.}
+}
+\value{
+A list with the following components
 
-\item{prev}{Population prevalence of \code{target}.}
+\code{sens} Sensitivity
+
+\code{spec} Specificity
+
+\code{PPV} Positive predictive value
+
+\code{NPV} Negative predictive value
+
+\code{C} Concordance
+
+\code{RU} Relative utility
 }
 \description{
-Calculates joint sensitivity, specificity, positive and negative predictive value, concordance and net benefit for a vector of predictors.
+Calculates joint sensitivity, specificity, positive and negative predictive value, concordance and relative utility for a vector of predictors.
 }
 \details{
-Joint measures consider the prediction of all events within a fixed target vector.
-If \code{target} is NULL, which is the default, then the marginal measures are calculated across the distribution of
-trait vectors.  Unlike classical sensitivity, specificity and concordance, the measures then depend upon the
-distribution of traits in the input data, which may differ from that in the population.
+Joint measures consider the prediction of all events occuring in an individual.
+For example, joint sensitivity is the probability that, given an individual with events for all traits,
+the predicted risk exceeds the threshold for all traits.
+Joint specificity is the probability that, given an individual with at least one non-event,
+the predicted risk is lower than the threshold for at least one trait.
 
-If \code{prev} is not specified, it is estimated from the \code{y} matrix, ignoring ascertainment.
+Joint concordance is the probability that, given one individual with events for all traits
+and another with at least one non-event, the minimum predicted risk over all traits is greater in the former
+individual.  It is calculated by randomly drawing such pairs of individuals from \code{y}.
+If \code{nsample} is zero, all such pairs are drawn from \code{y}; this might be time-consuming.
+Therefore the default is not to calculate concordance.
+However, a good estimate of concordance can be obtained from a limited number of random samples \code{nsample}.
+
+\code{prev} and \code{condprev} are only required to calculate relative utility, and can be omitted otherwise.
 }

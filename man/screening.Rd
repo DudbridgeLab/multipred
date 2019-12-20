@@ -4,24 +4,57 @@
 \alias{screening}
 \title{Screening measures of predictive accuracy}
 \usage{
-screening(x, y, thresh = NULL, prev = NULL, sample = 0)
+screening(x, y, thresh = NULL, prev = NULL, condprev = NULL, nsample = NULL)
 }
 \arguments{
 \item{x}{Matrix of predicted risks.  Each row corresponds to an individual, each column to a trait.  Each entry should be a risk between 0 and 1.}
 
 \item{y}{Matrix of traits.  Each row corresponds to an individual, each column to a trait.  Must contain binary events coded as 0 and 1.}
 
-\item{thresh}{Vector of risk thresholds.  For each row of x, an event is predicted for each trait that exceeds the corresponding element of thresh.  These predictions are then compared to the elements of y.}
+\item{thresh}{Vector of risk thresholds.  For each row of x, an event is predicted for each trait that exceeds the corresponding element of thresh.  These predictions are then compared to the elements of y.
+If NULL, which is the default, concordance is the only measure that can be calculated.}
 
-\item{prev}{Vector of prevalences.  Each element corresponds to a row of y and specifies the prevalence of that vector of traits.
-If prev is NULL, which is the default, then prev is estimated from the input matrix y.}
+\item{prev}{Probability of at least one event, required for calculating relative utility.
+If NULL, which is the default, then \code{prev} is estimated from the \code{y} matrix, ignoring ascertainment.}
 
-\item{sample}{Number of random samples to draw when estimating concordance.  Defaults to 0, in which case
-all pairs of individuals in x are considered.}
+\item{condprev}{Probability of at least one events, conditional on the risk predictions being equal to \code{thresh}.
+If NULL, which is the default, then \code{prev} is set to 1- the product of the elements of (1-\code{thresh}).
+This working definition is exact when predictions and outcomes both are jointly independent.}
+
+\item{nsample}{Number of random pairs of samples drawn when estimating concordance.
+If NULL, which is the default, concordance is not calculated.
+If 0, all possible pairs are drawn from the data.}
+}
+\value{
+A list with the following components
+
+\code{sens} Sensitivity
+
+\code{spec} Specificity
+
+\code{PPV} Positive predictive value
+
+\code{NPV} Negative predictive value
+
+\code{C} Concordance
+
+\code{RU} Relative utility
 }
 \description{
-Calculates screening sensitivity, specificity, positive and negative predictive value, concordance and net benefit for a vector of predictors.
+Calculates screening sensitivity, specificity, positive and negative predictive value, concordance and relative utility for a vector of predictors.
 }
 \details{
-Screening measures consider the prediction of at least one event among several, without regard to whether the correct events are predicted.
+Screening measures consider the prediction of at least one event, without regard to whether the correct events are predicted.
+For example, screening sensitivity is the probability that, for an individual with at least one event, the predicted risk
+exceeds the threshold for at least one trait (but not necessary the ones that did occur).
+Screening specificity is the probability that, for an individual with no events, the predicted risk is lower than the
+threshold for all traits.
+
+Screening concordance is the probability that given one individual with at least one event, and another without any,
+the maximum predicted risk over all traits is higher in the former individual.  It is calculated by randomly drawing such
+pairs of individuals from \code{y}.  If \code{nsample} is zero, all such pairs are drawn from \code{y};
+this might be time-consuming.  Therefore the default is not to calculate concordance.
+However, a good estimate can be obtained from a limited number of random samples \code{nsample}.
+
+\code{prev} and \code{condprev} are only required to calculate relative utility, and can be omitted otherwise.
 }

@@ -4,24 +4,58 @@
 \alias{analyticJoint}
 \title{Analytic joint measures of predictive accuracy}
 \usage{
-analyticJoint(VL, VX, VLX, prev, thresh, target)
+analyticJoint(VL, VX, VLX = NULL, thresh = NULL, prev, nsample = NULL)
 }
 \arguments{
 \item{VL}{Variance-covariance matrix of liability.  Must have 1 on diagonal.}
 
-\item{VX}{Variance-covariance matrix of predictors.  Diagonal entries are the liability variances explained for each trait ("heritabilities")}
+\item{VX}{Variance-covariance matrix of predictors.}
 
-\item{VLX}{Cross-covariance matrix between liabilities and predictors.  Entry on row i, column j, is covariance between liability i and predictor j.}
+\item{VLX}{Cross-covariance matrix between liabilities and predictors.
+Entry on row i, column j, is covariance between liability i and predictor j.
+Diagonal entries are the liability variances explained for each trait.}
+
+\item{thresh}{Vector of risk thresholds for predicting an event.
+If NULL, which is the default, concordance is the only measure that can be calculated.}
 
 \item{prev}{Vector of prevalences, ie population risks, for each trait}
 
-\item{thresh}{Vector of risk thresholds for predicting an event.}
+\item{nsample}{Number of random pairs of samples drawn when estimating concordance.
+If NULL, which is the default, concordance is not calculated.
+If 0, all possible pairs are drawn from the data.}
+}
+\value{
+A list with the following components
 
-\item{target}{Target trait vector for calculating joint measures of accuracy.}
+\code{sens} Sensitivity
+
+\code{spec} Specificity
+
+\code{PPV} Positive predictive value
+
+\code{NPV} Negative predictive value
+
+\code{C} Concordance
+
+\code{RU} Relative utility
 }
 \description{
-Analytic calculation of joint sensitivity, specificity, positive and negative predictive value, concordance and net benefit, under a multivariate liability threshold model.
+Analytic calculation of joint sensitivity, specificity, positive and negative predictive value, concordance and relative utility, under a multivariate liability threshold model.
 }
 \details{
-Details here
+Joint measures consider the prediction of all events occuring in an individual.
+For example, joint sensitivity is the probability that, given an individual with events for all traits,
+the predicted risk exceeds the threshold for all traits.
+Joint specificity is the probability that, given an individual with at least one non-event,
+the predicted risk is lower than the threshold for at least one trait.
+
+Joint concordance is the probability that, given one individual with events for all traits
+and another with at least one non-event, the minimum predicted risk over all traits is greater in the former
+individual.  It is calculated by randomly simulating \code{nsample} such pairs of individuals from the specified model.
+
+The \code{VL} matrix specifies covariance in liability between traits.
+In principle this can account for comorbidity or competing risks.
+The \code{VX} matrix specifies cross-covariance between liabilities and predictors.
+The diagonal entries are the liability variances explained by the corresponding predictors.
+The off-diagonal entries are the liability variances explained by predictors of the other traits.
 }
