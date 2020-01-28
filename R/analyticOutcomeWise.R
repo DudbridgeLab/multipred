@@ -12,6 +12,28 @@
 #' @template analyticParams
 #' @param weight Vector of weights
 #'
+#' @examples
+#' attach(PRSdata)
+#' analyticOutcomeWise(VL,VX,VX,thresh=prevalence,prev=prevalence)
+#'
+#' # $sens
+#' # [1] 0.6243863
+#'
+#' # $spec
+#' # [1] 0.6132883
+#'
+#' # $PPV
+#' # [1] 0.04641913
+#'
+#' # $NPV
+#' # [1] 0.9818697
+#'
+#' # $C
+#' # [1] 0.6533142
+#'
+#' # $RU
+#' # [1]  0.2376747
+#'
 #' @export
 analyticOutcomeWise = function(VL,VX,VLX=NULL,thresh=NULL,weight=NULL,prev) {
 

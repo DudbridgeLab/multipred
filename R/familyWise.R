@@ -2,16 +2,16 @@
 #'
 #' Calculates family-wise sensitivity, specificity, positive and negative predictive value, concordance and relative utility for a vector of predictors.
 #'
-#' Family-wise measures consider the prediction of at least one event among several.
-#' Predicted and actual events must coincide in at least one case.
-#' For example, family-wise sensitivity is the probability that, for an individual with at least one event, the predicted risk
-#' exceeds the threshold for at least one of the events that did occur.
-#' Family-wise specificity is the probability that, for an individual with at least one non-event, the predicted risk is lower than the
-#' threshold for all the non-events.
+#' Family-wise measures consider the prediction of at least one outcome to occur.
+#' An outcome that did occur must be predicted to occur in at least one case.
+#' For example, family-wise sensitivity is the probability that, for an individual in which at least one outcome did occur, the predicted risk
+#' exceeds the threshold for at least one of the outcomes that did occur.
+#' Family-wise specificity is the probability that, for an individual in which at least one outcome did not occur, the predicted risk is lower than the
+#' threshold for all the outcomes that did not occur.
 #'
-#' Family-wise concordance is the probability that given one individual with at least one event, and another with at least one non-event,
-#' the maximum predicted risk over all events that occurred in the former is higher than the maximum over all non-events in the latter.
-#' Note that under this definition an individual having both events and non-events can be either concordant or discordant with itself.
+#' Family-wise concordance is the probability that given one individual in which at least one outcome did occur, and another in which at least one did not occur,
+#' the maximum predicted risk over all outcomes that occurred in the former is higher than the maximum over all outcomes that did not occur in the latter.
+#' Note that under this definition an individual can be either concordant or discordant with itself.
 #' Concordance is calculated by randomly drawing such pairs of individuals from \code{y}.
 #' If \code{nsample} is zero, all such pairs are drawn from \code{y}; this might be time-consuming.
 #' Therefore the default is not to calculate condcordance.
@@ -32,8 +32,31 @@
 #' If NULL, which is the default, then \code{prev} is set to 1 - the product of the elements of (1-\code{thresh}).
 #' This working definition is exact when predictions and outcomes both are jointly independent.
 #'
+#' @examples
+#'
+#' attach(PRSdata)
+#' familyWise(risk,disease,thresh=prevalence,nsample=1e5)
+#'
+#' # $sens
+#' # [1] 0.6266996
+#'
+#' # $spec
+#' # [1] 0.0701
+#'
+#' # $PPV
+#' # [1] 0.1073925
+#'
+#' # $NPV
+#' # [1] 0.9311696
+#'
+#' # $C
+#' # [1] 0.47999
+#'
+#' # $RU
+#' # [1] -5.120519
+#'
 #' @export
-familyWise=function(x,y,thresh=NULL,prev0=NULL,prev1=NULL,nsample=NULL) {
+familyWise=function(x,y,thresh=NULL,prev0=NULL,prev1=NULL,condprev0=NULL,condprev1=NULL,nsample=NULL) {
 
   # coerce x and y to matrices
   x = as.matrix(x)

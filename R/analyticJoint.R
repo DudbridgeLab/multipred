@@ -2,18 +2,41 @@
 #'
 #' Analytic calculation of joint sensitivity, specificity, positive and negative predictive value, concordance and relative utility, under a multivariate liability threshold model.
 #'
-#' Joint measures consider the prediction of all events occuring in an individual.
-#' For example, joint sensitivity is the probability that, given an individual with events for all traits,
-#' the predicted risk exceeds the threshold for all traits.
-#' Joint specificity is the probability that, given an individual with at least one non-event,
-#' the predicted risk is lower than the threshold for at least one trait.
+#' Joint measures consider the prediction of all outcomes occuring in an individual.
+#' For example, joint sensitivity is the probability that, given an individual in which all outcomes did occur,
+#' the predicted risk exceeds the threshold for all outcomes.
+#' Joint specificity is the probability that, given an individual in which at least one outcome did not occur,
+#' the predicted risk is lower than the threshold for at least one outcome.
 #'
-#' Joint concordance is the probability that, given one individual with events for all traits
-#' and another with at least one non-event, the minimum predicted risk over all traits is greater in the former
+#' Joint concordance is the probability that, given one individual in which all outcomes did occur,
+#' and another in which at least one outcome did not occur, the minimum predicted risk over all outcomes is greater in the former
 #' individual.  It is calculated by randomly simulating \code{nsample} such pairs of individuals from the specified model.
 #'
 #' @template analyticParams
 #' @template nsample
+#'
+#' @examples
+#' # results will vary due to random sampling in computing multvariate integrals
+#' attach(PRSdata)
+#' analyticJoint(VL,VX,VX,thresh=prevalence,prev=prevalence,nsample=1e5)
+#'
+#' # $sens
+#' # [1] 0.04205708
+#'
+#' # $spec
+#' # [1] 0.9958742
+#'
+#' # $PPV
+#' # [1] 6.884139e-09
+#'
+#' # $NPV
+#' # [1] 1
+#'
+#' # $C
+#' # [1] 0.76669
+#'
+#' # $RU
+#' # [1] 0.03931163
 #'
 #' @export
 analyticJoint = function(VL,VX,VLX=NULL,thresh=NULL,prev,nsample=NULL) {

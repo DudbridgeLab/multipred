@@ -2,14 +2,14 @@
 #'
 #' Calculates screening sensitivity, specificity, positive and negative predictive value, concordance and relative utility for a vector of predictors.
 #'
-#' Screening measures consider the prediction of at least one event, without regard to whether the correct events are predicted.
-#' For example, screening sensitivity is the probability that, for an individual with at least one event, the predicted risk
-#' exceeds the threshold for at least one trait (but not necessary the ones that did occur).
-#' Screening specificity is the probability that, for an individual with no events, the predicted risk is lower than the
-#' threshold for all traits.
+#' Screening measures consider the prediction of at least one outcome to occur, without regard to whether the correct outcomes are predicted.
+#' For example, screening sensitivity is the probability that, for an individual in which at least one outcome did occur, the predicted risk
+#' exceeds the threshold for at least one outcome (but not necessary the ones that did occur).
+#' Screening specificity is the probability that, for an individual in which no outcomes did occur, the predicted risk is lower than the
+#' threshold for all outcomes.
 #'
-#' Screening concordance is the probability that given one individual with at least one event, and another without any,
-#' the maximum predicted risk over all traits is higher in the former individual.  It is calculated by randomly drawing such
+#' Screening concordance is the probability that given one individual in which at least one outcome did occur, and another in which no outcomes did occur,
+#' the maximum predicted risk over all outcomes is higher in the former individual.
 #' pairs of individuals from \code{y}.  If \code{nsample} is zero, all such pairs are drawn from \code{y};
 #' this might be time-consuming.  Therefore the default is not to calculate concordance.
 #' However, a good estimate can be obtained from a limited number of random samples \code{nsample}.
@@ -23,6 +23,30 @@
 #' @param condprev Probability of at least one events, conditional on the risk predictions being equal to \code{thresh}.
 #' If NULL, which is the default, then \code{prev} is set to 1- the product of the elements of (1-\code{thresh}).
 #' This working definition is exact when predictions and outcomes both are jointly independent.
+#'
+#'
+#' @examples
+#'
+#' attach(PRSdata)
+#' screening(risk,disease,thresh=prevalence,nsample=1e5)
+#'
+#' # $sens
+#' # [1] 0.9653894
+#'
+#' # $spec
+#' # [1] 0.05989024
+#'
+#' # $PPV
+#' # [1] 0.1654311
+#'
+#' # $NPV
+#' # [1] 0.8996416
+#'
+#' # $C
+#' # [1] 0.59156
+#'
+#' # $RU
+#' # [1] -0.009099365
 #'
 #' @export
 screening=function(x,y,thresh=NULL,prev=NULL,condprev=NULL,nsample=NULL) {

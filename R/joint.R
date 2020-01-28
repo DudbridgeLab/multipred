@@ -2,14 +2,14 @@
 #'
 #' Calculates joint sensitivity, specificity, positive and negative predictive value, concordance and relative utility for a vector of predictors.
 #'
-#' Joint measures consider the prediction of all events occuring in an individual.
-#' For example, joint sensitivity is the probability that, given an individual with events for all traits,
-#' the predicted risk exceeds the threshold for all traits.
-#' Joint specificity is the probability that, given an individual with at least one non-event,
-#' the predicted risk is lower than the threshold for at least one trait.
+#' Joint measures consider the prediction of all outcomes occuring in an individual.
+#' For example, joint sensitivity is the probability that, given an individual in which all outcomes did occur,
+#' the predicted risk exceeds the threshold for all outcomes.
+#' Joint specificity is the probability that, given an individual in which at least one outcome did not occur,
+#' the predicted risk is lower than the threshold for at least one outcome.
 #'
-#' Joint concordance is the probability that, given one individual with events for all traits
-#' and another with at least one non-event, the minimum predicted risk over all traits is greater in the former
+#' Joint concordance is the probability that, given one individual in which all outcomes did occur,
+#' and another in which at least one outcome did not occur, the minimum predicted risk over all outcomes is greater in the former
 #' individual.  It is calculated by randomly drawing such pairs of individuals from \code{y}.
 #' If \code{nsample} is zero, all such pairs are drawn from \code{y}; this might be time-consuming.
 #' Therefore the default is not to calculate concordance.
@@ -25,6 +25,29 @@
 #' @param condprev Probability of all events occuring, conditional on the risk predictions being equal to \code{thresh}.
 #' If NULL, which is the default, then \code{prev} is set to the product of the elements of \code{thresh}.
 #' This working definition is exact when predictions and outcomes both are jointly independent.
+#'
+#' @examples
+#'
+#' attach(PRSdata)
+#' joint(risk[,1:2],disease[,1:2],thresh=prevalence[1:2],nsample=1e5)
+#'
+#' # $sens
+#' # [1] 0.4041096
+#'
+#' # $spec
+#' # [1] 0.7653745
+#'
+#' # $PPV
+#' # [1] 0.02488402
+#'
+#' # $NPV
+#' # [1] 0.9885961
+#'
+#' # $C
+#' # [1] 0.63282
+#'
+#' # $RU
+#' # [1] 0.3292956
 #'
 #' @export
 joint=function(x,y,thresh=NULL,prev=NULL,condprev=NULL,nsample=NULL) {

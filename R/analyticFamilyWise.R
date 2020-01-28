@@ -2,20 +2,43 @@
 #'
 #' Analytic calculation of family-wise sensitivity, specificity, positive and negative predictive value, concordance and relative utility, under a multivariate liability threshold model.
 #'
-#' Family-wise measures consider the prediction of at least one event among several.
-#' Predicted and actual events must coincide in at least one case.
-#' For example, family-wise sensitivity is the probability that, for an individual with at least one event, the predicted risk
-#' exceeds the threshold for at least one of the events that did occur.
-#' Family-wise specificity is the probability that, for an individual with at least one non-event, the predicted risk is lower than the
-#' threshold for all the non-events.
+#' Family-wise measures consider the prediction of at least one outcome to occur.
+#' An outcome that did occur must be predicted to occur in at least one case.
+#' For example, family-wise sensitivity is the probability that, for an individual in which at least one outcome did occur, the predicted risk
+#' exceeds the threshold for at least one of the outcomes that did occur.
+#' Family-wise specificity is the probability that, for an individual in which at least one outcome did not occur, the predicted risk is lower than the
+#' threshold for all the outcomes that did not occur.
 #'
-#' Family-wise concordance is the probability that given one individual with at least one event, and another with at least one non-event,
-#' the maximum predicted risk over all events that occurred in the former is higher than the maximum over all non-events in the latter.
-#' Note that under this definition an individual having both events and non-events can be either concordant or discordant with itself.
+#' Family-wise concordance is the probability that given one individual in which at least one outcome did occur, and another in which at least one did not occur,
+#' the maximum predicted risk over all outcomes that occurred in the former is higher than the maximum over all outcomes that did not occur in the latter.
+#' Note that under this definition an individual can be either concordant or discordant with itself.
 #' Concordance is calculated by randomly simulating \code{nsample} such pairs of individuals from the specified model.
 #'
 #' @template analyticParams
 #' @template nsample
+#'
+#' @examples
+#' # results will vary due to random sampling in computing multivariate integrals
+#' attach(PRSdata)
+#' analyticFamilyWise(VL,VX,VX,thresh=prevalence,prev=prevalence,nsample=1e5)
+#'
+#' # $sens
+#' # [1] 0.6463497
+#'
+#' # $spec
+#' # [1] 0.0708455
+#'
+#' # $PPV
+#' # [1] 0.1081343
+#'
+#' # $NPV
+#' # [1] 0.9371735
+#'
+#' # $C
+#' # [1] 0.49142
+#'
+#' # $RU
+#' # [1] -0.31006
 #'
 #' @export
 analyticFamilyWise = function(VL,VX,VLX=NULL,thresh=NULL,prev,nsample=NULL) {
@@ -141,11 +164,12 @@ analyticFamilyWise = function(VL,VX,VLX=NULL,thresh=NULL,prev,nsample=NULL) {
 
     # relative utility
     # probability of all events given predictions at the threshold
-    probAllEventsConditional = pmvnorm(lower=liabThresh, upper=ref(Inf,ntrait), mean=as.vector(VLX %*% solve(VX) %*% as.matrix(thresh)), sigma=VL-VLX %*% solve(VX) %*% t(VLX))
+    probAllEventsConditional = pmvnorm(lower=liabThresh, upper=rep(Inf,ntrait), mean=as.vector(VLX %*% solve(VX) %*% as.matrix(thresh)), sigma=VL-VLX %*% solve(VX) %*% t(VLX))
     # probability of no events given predictions at the threshold
-    probNoEventsConditional = pmvnorm(lower=rep(-Inf,thresh), upper=liabThresh, mean=as.vector(VLX %*% solve(VX) %*% as.matrix(thresh)), sigma=VL-VLX %*% solve(VX) %*% t(VLX))
+    probNoEventsConditional = pmvnorm(lower=rep(-Inf,ntrait), upper=liabThresh, mean=as.vector(VLX %*% solve(VX) %*% as.matrix(thresh)), sigma=VL-VLX %*% solve(VX) %*% t(VLX))
 
     RU = sens - (1-spec) * (1-probNoEventsConditional)/(1-probAllEventsConditional) * (1-probAllEvents)/(1-probNoEvents)
+    attributes(RU) = NULL
 
     # positive predictive value
 

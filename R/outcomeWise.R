@@ -15,6 +15,29 @@
 #'
 #' @template sharedParams
 #'
+#' @examples
+#'
+#' attach(PRSdata)
+#' outcomeWise(risk,disease,thresh=prevalence)
+#'
+#' # $sens
+#' # [1] 0.6017748
+#'
+#' # $spec
+#' # [1] 0.6129354
+#'
+#' # $PPV
+#' # [1] 0.04595316
+#'
+#' # $NPV
+#' # [1] 0.9802688
+#'
+#' # $C
+#' # [1] 0.6442582
+#'
+#' # $RU
+#' # [1] 0.2251043
+#'
 #' @export
 outcomeWise=function(x,y,thresh=NULL,weight=NULL,prev=NULL) {
 

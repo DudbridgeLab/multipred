@@ -2,18 +2,41 @@
 #'
 #' Analytic calculation of screening sensitivity, specificity, positive and negative predictive value, concordance and relative utility, under a multivariate liability threshold model.
 #'
-#' Screening measures consider the prediction of at least one event, without regard to whether the correct events are predicted.
-#' For example, screening sensitivity is the probability that, for an individual with at least one event, the predicted risk
-#' exceeds the threshold for at least one trait (but not necessary the ones that did occur).
-#' Screening specificity is the probability that, for an individual with no events, the predicted risk is lower than the
-#' threshold for all traits.
+#' Screening measures consider the prediction of at least one outcome to occur, without regard to whether the correct outcomes are predicted.
+#' For example, screening sensitivity is the probability that, for an individual in which at least one outcome did occur, the predicted risk
+#' exceeds the threshold for at least one outcome (but not necessary the ones that did occur).
+#' Screening specificity is the probability that, for an individual in which no outcomes did occur, the predicted risk is lower than the
+#' threshold for all outcomes.
 #'
-#' Screening concordance is the probability that given one individual with at least one event, and another without any,
-#' the maximum predicted risk over all traits is higher in the former individual.
+#' Screening concordance is the probability that given one individual in which at least one outcome did occur, and another in which no outcomes did occur,
+#' the maximum predicted risk over all outcomes is higher in the former individual.
 #' It is calculated by randomly simulating \code{nsample} such pairs of individuals from the specified model.
 
 #' @template analyticParams
 #' @template analyticnsample
+#'
+#' @examples
+#' # results will vary due to random sampling in computing multvariate integrals
+#' attach(PRSdata)
+#' analyticScreening(VL,VX,VX,thresh=prevalence,prev=prevalence,nsample=1e5)
+#'
+#' # $sens
+#' # [1] 0.9591925
+#'
+#' # $spec
+#' # [1] 0.06055228
+#'
+#' # $PPV
+#' # [1] 0.1604819
+#'
+#' # $NPV
+#' # [1] 0.8879618
+#'
+#' # $C
+#' # [1] 0.59799
+#'
+#' # $RU
+#' # [1] -0.04479532
 #'
 #' @export
 analyticScreening = function(VL,VX,VLX=NULL,thresh=NULL,prev,nsample=NULL) {
@@ -74,7 +97,7 @@ analyticScreening = function(VL,VX,VLX=NULL,thresh=NULL,prev,nsample=NULL) {
     # probability of no events
     probNoEvents = pmvnorm(lower=rep(-Inf,ntrait), upper=liabThresh, sigma=VL)
 
-    # probability of no predicted events
+        # probability of no predicted events
     probNoPredictions = pmvnorm(lower=rep(-Inf,ntrait), upper=scoreThresh, sigma=VX)
 
     # probability of no events and no predicted events
