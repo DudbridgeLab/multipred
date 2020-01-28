@@ -47,10 +47,27 @@ More generally, \code{weight} allows different outcomes to contribute more or le
 
 Outcome-wise sensitivity, specificity and concordance are weighted sums of the univariate measures,
 where the weights depend on \code{prev}.
+}
+\examples{
+attach(PRSdata)
+analyticOutcomeWise(VL,VX,VX,thresh=prevalence,prev=prevalence)
 
-The \code{VL} matrix specifies covariance in liability between traits.
-In principle this can account for comorbidity or competing risks.
-The \code{VX} matrix specifies cross-covariance between liabilities and predictors.
-The diagonal entries are the liability variances explained by the corresponding predictors.
-The off-diagonal entries are the liability variances explained by predictors of the other traits.
+# $sens
+# [1] 0.6243863
+
+# $spec
+# [1] 0.6132883
+
+# $PPV
+# [1] 0.04641913
+
+# $NPV
+# [1] 0.9818697
+
+# $C
+# [1] 0.6533142
+
+# $RU
+# [1]  0.2376747
+
 }

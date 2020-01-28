@@ -7,11 +7,11 @@
 screening(x, y, thresh = NULL, prev = NULL, condprev = NULL, nsample = NULL)
 }
 \arguments{
-\item{x}{Matrix of predicted risks.  Each row corresponds to an individual, each column to a trait.  Each entry should be a risk between 0 and 1.}
+\item{x}{Matrix of predicted risks.  Each row corresponds to an individual, each column to an outcome.  Each entry should be a risk between 0 and 1.}
 
-\item{y}{Matrix of traits.  Each row corresponds to an individual, each column to a trait.  Must contain binary events coded as 0 and 1.}
+\item{y}{Matrix of outcomes.  Each row corresponds to an individual, each column to an outcome.  Must contain binary outcomes coded as 0 and 1.}
 
-\item{thresh}{Vector of risk thresholds.  For each row of x, an event is predicted for each trait that exceeds the corresponding element of thresh.  These predictions are then compared to the elements of y.
+\item{thresh}{Vector of risk thresholds.  For each row of x, each outcome is predicted to occur for which the risk exceeds the corresponding element of thresh.  These predictions are then compared to the elements of y.
 If NULL, which is the default, concordance is the only measure that can be calculated.}
 
 \item{prev}{Probability of at least one event, required for calculating relative utility.
@@ -44,17 +44,41 @@ A list with the following components
 Calculates screening sensitivity, specificity, positive and negative predictive value, concordance and relative utility for a vector of predictors.
 }
 \details{
-Screening measures consider the prediction of at least one event, without regard to whether the correct events are predicted.
-For example, screening sensitivity is the probability that, for an individual with at least one event, the predicted risk
-exceeds the threshold for at least one trait (but not necessary the ones that did occur).
-Screening specificity is the probability that, for an individual with no events, the predicted risk is lower than the
-threshold for all traits.
+Screening measures consider the prediction of at least one outcome to occur, without regard to whether the correct outcomes are predicted.
+For example, screening sensitivity is the probability that, for an individual in which at least one outcome did occur, the predicted risk
+exceeds the threshold for at least one outcome (but not necessary the ones that did occur).
+Screening specificity is the probability that, for an individual in which no outcomes did occur, the predicted risk is lower than the
+threshold for all outcomes.
 
-Screening concordance is the probability that given one individual with at least one event, and another without any,
-the maximum predicted risk over all traits is higher in the former individual.  It is calculated by randomly drawing such
+Screening concordance is the probability that given one individual in which at least one outcome did occur, and another in which no outcomes did occur,
+the maximum predicted risk over all outcomes is higher in the former individual.
 pairs of individuals from \code{y}.  If \code{nsample} is zero, all such pairs are drawn from \code{y};
 this might be time-consuming.  Therefore the default is not to calculate concordance.
 However, a good estimate can be obtained from a limited number of random samples \code{nsample}.
 
 \code{prev} and \code{condprev} are only required to calculate relative utility, and can be omitted otherwise.
+}
+\examples{
+
+attach(PRSdata)
+screening(risk,disease,thresh=prevalence,nsample=1e5)
+
+# $sens
+# [1] 0.9653894
+
+# $spec
+# [1] 0.05989024
+
+# $PPV
+# [1] 0.1654311
+
+# $NPV
+# [1] 0.8996416
+
+# $C
+# [1] 0.59156
+
+# $RU
+# [1] -0.009099365
+
 }
