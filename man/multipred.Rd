@@ -8,9 +8,9 @@
 Package for calculating measures of accuracy for risk predictors of multiple outcomes.
 }
 \details{
-Four types of accuracy can be evaluated: outcome-wise, joint, and family-wise (weak sense and strong sense).
+Accuracy can be evaluated in four senses: outcome-wise, joint, and family-wise (weak sense and strong sense).
 For convenience the weak family-wise sense is also called "screening", and the strong family-wise sense
-as simply "family-wise".  For each type, accuracy can be measured empirically, within data sets given as input, or theoretically,
+simply "family-wise".  In each sense, accuracy can be measured empirically, within data sets given as input, or theoretically,
 given parameters of an underlying multivariate liability threshold model.
 
 Throughout the documentation, an "outcome" means one of several binary variables observed in an individual,
