@@ -18,9 +18,9 @@ Diagonal entries are the liability variances explained for each trait.}
 \item{thresh}{Vector of risk thresholds for predicting an event.
 If NULL, which is the default, concordance is the only measure that can be calculated.}
 
-\item{weight}{Vector of weights}
+\item{weight}{Vector of weights.}
 
-\item{prev}{Vector of prevalences, ie population risks, for each trait}
+\item{prev}{Vector of prevalences, ie population risks, for each trait.}
 }
 \value{
 A list with the following components
@@ -38,7 +38,7 @@ A list with the following components
 \code{RU} Relative utility
 }
 \description{
-Analytic calculation of outcome-wise sensitivity, specificity, positive and negative predictive value, concordance and net benefit, under a multivariate liability threshold model.
+Analytic calculation of outcome-wise sensitivity, specificity, positive and negative predictive value, concordance and relative utility, under a multivariate liability threshold model.
 }
 \details{
 Outcome-wise measures consider the prediction of individual outcomes summed over individuals.

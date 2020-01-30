@@ -18,7 +18,7 @@ Diagonal entries are the liability variances explained for each trait.}
 \item{thresh}{Vector of risk thresholds for predicting an event.
 If NULL, which is the default, concordance is the only measure that can be calculated.}
 
-\item{prev}{Vector of prevalences, ie population risks, for each trait}
+\item{prev}{Vector of prevalences, ie population risks, for each trait.}
 
 \item{nsample}{Number of random samples drawn when estimating concordance.
 If NULL, which is the default, concordance is not calculated.}
