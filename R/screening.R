@@ -10,7 +10,7 @@
 #'
 #' Screening concordance is the probability that given one individual in which at least one outcome did occur, and another in which no outcomes did occur,
 #' the maximum predicted risk over all outcomes is higher in the former individual.
-#' pairs of individuals from \code{y}.  If \code{nsample} is zero, all such pairs are drawn from \code{y};
+#' It is calculated by randomly drawing such pairs of individuals from \code{y}.  If \code{nsample} is zero, all such pairs are drawn from \code{y};
 #' this might be time-consuming.  Therefore the default is not to calculate concordance.
 #' However, a good estimate can be obtained from a limited number of random samples \code{nsample}.
 #'

@@ -1,6 +1,6 @@
 #' Analytic outcome-wise measures of predictive accuracy
 #'
-#' Analytic calculation of outcome-wise sensitivity, specificity, positive and negative predictive value, concordance and net benefit, under a multivariate liability threshold model.
+#' Analytic calculation of outcome-wise sensitivity, specificity, positive and negative predictive value, concordance and relative utility, under a multivariate liability threshold model.
 #'
 #' Outcome-wise measures consider the prediction of individual outcomes summed over individuals.
 #' When \code{weight} is a vector of 1's (default), outcome-wise measures correspond to classical univariate measures with the \code{x} matrix vectorised into a column vector.
@@ -10,7 +10,7 @@
 #' where the weights depend on \code{prev}.
 #'
 #' @template analyticParams
-#' @param weight Vector of weights
+#' @param weight Vector of weights.
 #'
 #' @examples
 #' attach(PRSdata)

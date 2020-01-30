@@ -3,7 +3,7 @@
 #' Calculates family-wise sensitivity, specificity, positive and negative predictive value, concordance and relative utility for a vector of predictors.
 #'
 #' Family-wise measures consider the prediction of at least one outcome to occur.
-#' An outcome that did occur must be predicted to occur in at least one case.
+#' At least one outcome that did occur must be predicted to occur.
 #' For example, family-wise sensitivity is the probability that, for an individual in which at least one outcome did occur, the predicted risk
 #' exceeds the threshold for at least one of the outcomes that did occur.
 #' Family-wise specificity is the probability that, for an individual in which at least one outcome did not occur, the predicted risk is lower than the
