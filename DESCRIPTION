@@ -1,6 +1,6 @@
 Package: multipred
 Type: Package
-Title: Package for calculating measures of accuracy for risk predictors of multiple outcomes.
+Title: Calculates measures of accuracy for risk predictors of multiple outcomes.
 Version: 0.1
 Date: 2017-07-10
 Author: Frank Dudbridge
