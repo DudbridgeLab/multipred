@@ -1,5 +1,5 @@
 # multipred
-Calculates measures of accuracy for risk predictors of multiple outcomes
+Calculates measures of accuracy for risk predictors of multiple outcomes.
 
 To install within R, devtools::install_github("DudbridgeLab/multipred").
 
