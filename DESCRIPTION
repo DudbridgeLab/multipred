@@ -1,11 +1,11 @@
 Package: multipred
 Type: Package
 Title: Calculates measures of accuracy for risk predictors of multiple outcomes.
-Version: 0.1
-Date: 2017-07-10
+Version: 0.2
+Date: 2020-07-10
 Author: Frank Dudbridge
 Maintainer: Frank Dudbridge <frank.dudbridge@leicester.ac.uk>
-Description: Accuracy can be evaluated in four senses: outcome-wise, joint, and family-wise (weak sense and strong sense).  For convenience the weak family-wise sense is also called "screening", and the strong family-wise sense simply "family-wise".  In each sense, accuracy can be measured empirically, within data sets given as input, or theoretically, given parameters of an underlying multivariate liability threshold model.
+Description: Accuracy can be evaluated in four senses: outcome-wise, joint, and panel-wise (weak sense and strong sense).  For convenience the weak panel-wise sense is also called "screening", and the strong panel-wise sense simply "panel-wise".  In each sense, accuracy can be measured empirically, within data sets given as input, or theoretically, given parameters of an underlying multivariate liability threshold model.
 License: GPL-3
 LazyData: TRUE
 RoxygenNote: 7.0.2
