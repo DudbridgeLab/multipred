@@ -1,5 +1,5 @@
 # Simulate polygenic risk scores (PRS) for six common diseases
-# MOdel from table 1 of Dudbridge F (2020) Stat Methods Med Research
+# Model from table 1 of Dudbridge F (2020) Stat Methods Med Research
 #
 # T2D = Type-2 diabetes
 # CAD = Coronary artery disease
