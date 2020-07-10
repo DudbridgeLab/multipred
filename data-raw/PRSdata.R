@@ -1,4 +1,5 @@
 # Simulate polygenic risk scores (PRS) for six common diseases
+# MOdel from table 1 of Dudbridge F (2020) Stat Methods Med Research
 #
 # T2D = Type-2 diabetes
 # CAD = Coronary artery disease
@@ -6,6 +7,8 @@
 # UC = Ulcerative colitis
 # SCZ = schizophrenia
 # RA = Rheumatoid Arthritis
+
+library(mvtnorm)
 
 # Reported area under ROC curve for published PRS
 AUC = c(0.66,0.623,0.75,0.7,0.62,0.7)
@@ -62,4 +65,4 @@ for(i in 1:6) {
   disease[,i] = PRS[,i] > (-qnorm(prevalence[i]))
 }
 
-PRSdata = list(liability=PRS[,1:6],PRS=PRS[,7:12],risk=risk,disease=disease,VL=VL,VX=VX,prevalence=prevalence)
+PRSdata = list(liability=PRS[,1:6],PRS=PRS[,7:12],risk=risk,disease=disease,VL=VL,VX=VX,h2=h2,prevalence=prevalence)
