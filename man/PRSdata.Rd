@@ -18,6 +18,7 @@ schizophrenia and rheumatoid arthritis.
 \item{\code{disease}}{Disease outcomes corresponding to \code{liability}}
 \item{\code{VL}}{Variance-covariance matrix of \code{liability}}
 \item{\code{VX}}{Variance-covariance matrix of \code{PRS}}
+\item{\code{h2}}{Disease heritabilities}
 \item{\code{prevalence}}{Disease prevalences}
 }}
 \usage{

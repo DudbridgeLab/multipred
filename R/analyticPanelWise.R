@@ -1,15 +1,15 @@
-#' Analytic family-wise measures of predictive accuracy
+#' Analytic panel-wise measures of predictive accuracy
 #'
-#' Analytic calculation of family-wise sensitivity, specificity, positive and negative predictive value, concordance and relative utility, under a multivariate liability threshold model.
+#' Analytic calculation of panel-wise sensitivity, specificity, positive and negative predictive value, concordance and relative utility, under a multivariate liability threshold model.
 #'
-#' Family-wise measures consider the prediction of at least one outcome to occur.
+#' Panel-wise measures consider the prediction of at least one outcome to occur.
 #' At least one outcome that did occur must be predicted to occur.
-#' For example, family-wise sensitivity is the probability that, for an individual in which at least one outcome did occur, the predicted risk
+#' For example, panel-wise sensitivity is the probability that, for an individual in which at least one outcome did occur, the predicted risk
 #' exceeds the threshold for at least one of the outcomes that did occur.
-#' Family-wise specificity is the probability that, for an individual in which at least one outcome did not occur, the predicted risk is lower than the
+#' Panel-wise specificity is the probability that, for an individual in which at least one outcome did not occur, the predicted risk is lower than the
 #' threshold for all the outcomes that did not occur.
 #'
-#' Family-wise concordance is the probability that given one individual in which at least one outcome did occur, and another in which at least one did not occur,
+#' Panel-wise concordance is the probability that given one individual in which at least one outcome did occur, and another in which at least one did not occur,
 #' the maximum predicted risk over all outcomes that occurred in the former is higher than the maximum over all outcomes that did not occur in the latter.
 #' Note that under this definition an individual can be either concordant or discordant with itself.
 #' Concordance is calculated by randomly simulating \code{nsample} such pairs of individuals from the specified model.
@@ -20,7 +20,7 @@
 #' @examples
 #' # results will vary due to random sampling in computing multivariate integrals
 #' attach(PRSdata)
-#' analyticFamilyWise(VL,VX,VX,thresh=prevalence,prev=prevalence,nsample=1e5)
+#' analyticPanelWise(VL,VX,VX,thresh=prevalence,prev=prevalence,nsample=1e5)
 #'
 #' # $sens
 #' # [1] 0.6463497
@@ -41,7 +41,7 @@
 #' # [1] -0.31006
 #'
 #' @export
-analyticFamilyWise = function(VL,VX,VLX=NULL,thresh=NULL,prev,nsample=NULL) {
+analyticPanelWise = function(VL,VX,VLX=NULL,thresh=NULL,prev,nsample=NULL) {
 
   # coerce VL, VX and VX to matrices
   if (is.null(VLX)) VLX = VX

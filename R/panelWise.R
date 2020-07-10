@@ -1,15 +1,15 @@
-#' Family-wise measures of predictive accuracy
+#' Panel-wise measures of predictive accuracy
 #'
-#' Calculates family-wise sensitivity, specificity, positive and negative predictive value, concordance and relative utility for a vector of predictors.
+#' Calculates panel-wise sensitivity, specificity, positive and negative predictive value, concordance and relative utility for a vector of predictors.
 #'
-#' Family-wise measures consider the prediction of at least one outcome to occur.
+#' Panel-wise measures consider the prediction of at least one outcome to occur.
 #' At least one outcome that did occur must be predicted to occur.
-#' For example, family-wise sensitivity is the probability that, for an individual in which at least one outcome did occur, the predicted risk
+#' For example, panel-wise sensitivity is the probability that, for an individual in which at least one outcome did occur, the predicted risk
 #' exceeds the threshold for at least one of the outcomes that did occur.
-#' Family-wise specificity is the probability that, for an individual in which at least one outcome did not occur, the predicted risk is lower than the
+#' Panel-wise specificity is the probability that, for an individual in which at least one outcome did not occur, the predicted risk is lower than the
 #' threshold for all the outcomes that did not occur.
 #'
-#' Family-wise concordance is the probability that given one individual in which at least one outcome did occur, and another in which at least one did not occur,
+#' Panel-wise concordance is the probability that given one individual in which at least one outcome did occur, and another in which at least one did not occur,
 #' the maximum predicted risk over all outcomes that occurred in the former is higher than the maximum over all outcomes that did not occur in the latter.
 #' Note that under this definition an individual can be either concordant or discordant with itself.
 #' Concordance is calculated by randomly drawing such pairs of individuals from \code{y}.
@@ -35,7 +35,7 @@
 #' @examples
 #'
 #' attach(PRSdata)
-#' familyWise(risk,disease,thresh=prevalence,nsample=1e5)
+#' panelWise(risk,disease,thresh=prevalence,nsample=1e5)
 #'
 #' # $sens
 #' # [1] 0.6266996
@@ -56,7 +56,7 @@
 #' # [1] -5.120519
 #'
 #' @export
-familyWise=function(x,y,thresh=NULL,prev0=NULL,prev1=NULL,condprev0=NULL,condprev1=NULL,nsample=NULL) {
+panelWise=function(x,y,thresh=NULL,prev0=NULL,prev1=NULL,condprev0=NULL,condprev1=NULL,nsample=NULL) {
 
   # coerce x and y to matrices
   x = as.matrix(x)
