@@ -53,7 +53,7 @@ the maximum predicted risk over all outcomes is higher in the former individual.
 It is calculated by randomly simulating \code{nsample} such pairs of individuals from the specified model.
 }
 \examples{
-# results will vary due to random sampling in computing multvariate integrals
+# results will vary due to random sampling in computing multivariate integrals
 attach(PRSdata)
 analyticScreening(VL,VX,VX,thresh=prevalence,prev=prevalence,nsample=1e5)
 

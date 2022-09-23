@@ -4,7 +4,8 @@
 \name{PRSdata}
 \alias{PRSdata}
 \title{Polygenic risk scores}
-\format{A list with 7 elements.
+\format{
+A list with 7 elements.
 Each element is a matrix with 10,000 rows and 6 columns
 corresponding to simulated data on 10,000 individuals for 6 diseases.
 Diseases are modelled on type-2 diabetes, coronary artery disease,
@@ -20,7 +21,8 @@ schizophrenia and rheumatoid arthritis.
 \item{\code{VX}}{Variance-covariance matrix of \code{PRS}}
 \item{\code{h2}}{Disease heritabilities}
 \item{\code{prevalence}}{Disease prevalences}
-}}
+}
+}
 \usage{
 PRSdata
 }
