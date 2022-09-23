@@ -16,7 +16,7 @@
 #' @template nsample
 #'
 #' @examples
-#' # results will vary due to random sampling in computing multvariate integrals
+#' # results will vary due to random sampling in computing multivariate integrals
 #' attach(PRSdata)
 #' analyticJoint(VL,VX,VX,thresh=prevalence,prev=prevalence,nsample=1e5)
 #'
